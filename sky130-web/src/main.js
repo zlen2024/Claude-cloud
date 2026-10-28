@@ -1,5 +1,8 @@
 import { Engine, EngineAbortError } from "./engine/client.js";
-import { LESSONS, SCRATCH } from "./lessons.js";
+import { LESSONS, SCRATCH, MODULES } from "./lessons/index.js";
+import { runChecks } from "./checks.js";
+import { diffText } from "./diff.js";
+import { marked } from "marked";
 import { createEditor } from "./editor.js";
 import { lintNetlist, addSkyHeader } from "./lint.js";
 import { parseNgspiceErrors, PDK_MESSAGE } from "./errors.js";
@@ -13,7 +16,7 @@ import "./style.css";
 
 const $ = (id) => document.getElementById(id);
 const els = {
-  lesson: $("lesson"), desc: $("desc"), editorHost: $("editor"), hints: $("hints"), share: $("share"), run: $("run"), reset: $("reset"), stop: $("stop"),
+  outline: $("outline"), lessonMd: $("lesson-md"), checksEl: $("checks"), check: $("check"), editorHost: $("editor"), hints: $("hints"), share: $("share"), run: $("run"), reset: $("reset"), stop: $("stop"),
   status: $("status"), legend: $("legend"), log: $("log"), plot: $("plot"), info: $("info"),
   expr: $("expr"), exprAdd: $("expr-add"), curA: $("cur-a"), curB: $("cur-b"), csv: $("csv"), png: $("png"),
 };
@@ -24,6 +27,7 @@ let built = null; // keluaran buildSignals
 let items = []; // { name, unit, values|mag+phase, color, on, derived }
 let exprs = []; // ungkapan terbitan (dinilai semula selepas setiap run)
 let netlistRun = "";
+let lastRes = null;
 
 function setStatus(text, kind = "") {
   els.status.textContent = text;
@@ -85,13 +89,16 @@ function renderHints() {
 function loadLesson(index, { text, reset = false } = {}) {
   const lesson = ALL[index];
   current = lesson;
-  els.lesson.value = String(index);
+  renderOutline();
+  els.check.hidden = lesson.checks.length === 0;
+  els.checksEl.innerHTML = "";
   if (reset) store.remove(`netlist:${lesson.id}`);
   editor.setValue(text ?? store.get(`netlist:${lesson.id}`) ?? lesson.netlist);
   if (text !== undefined) store.set(`netlist:${lesson.id}`, text);
   runDiags = [];
   refreshLint();
-  els.desc.textContent = lesson.description;
+  els.lessonMd.innerHTML = marked.parse(lesson.md);
+  els.lessonMd.scrollTop = 0;
   built = null;
   items = [];
   exprs = [];
@@ -237,6 +244,117 @@ function addDerived(src, { quiet = false } = {}) {
   }
 }
 
+const isDone = (l) => store.get(`done:${l.id}`) === "1";
+
+function renderOutline() {
+  els.outline.innerHTML = "";
+  const add = (l) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.lesson = l.id;
+    b.className = l === current ? "active" : "";
+    b.setAttribute("aria-current", l === current ? "true" : "false");
+    const t = document.createElement("span");
+    t.textContent = l.title;
+    b.append(t);
+    if (isDone(l)) {
+      const k = document.createElement("span");
+      k.className = "tick";
+      k.textContent = "✓";
+      k.title = "Siap";
+      b.append(k);
+    }
+    b.addEventListener("click", () => loadLesson(ALL.indexOf(l)));
+    els.outline.append(b);
+  };
+  for (const [key, name] of Object.entries(MODULES)) {
+    const ls = LESSONS.filter((l) => l.module === key);
+    if (!ls.length) continue;
+    const h = document.createElement("h3");
+    h.textContent = `${key}. ${name}`;
+    els.outline.append(h);
+    ls.forEach(add);
+  }
+  const h = document.createElement("h3");
+  h.textContent = "Bebas";
+  els.outline.append(h);
+  add(SCRATCH);
+}
+
+const hintLevel = new Map();
+
+function renderChecks(results) {
+  els.checksEl.innerHTML = "";
+  for (const c of results) {
+    const row = document.createElement("div");
+    row.className = "check";
+    row.dataset.check = c.id;
+    row.dataset.pass = String(c.pass);
+    const mark = document.createElement("span");
+    mark.className = `mark ${c.pass ? "ok" : "bad"}`;
+    mark.textContent = c.pass ? "✓" : "✗";
+    const body = document.createElement("div");
+    body.textContent = c.label;
+    const vals = document.createElement("div");
+    vals.className = "vals";
+    vals.textContent = `sebenar: ${c.actual}   jangkaan: ${c.expected}`;
+    body.append(vals);
+    row.append(mark, body);
+    if (!c.pass) {
+      const ladder = [...c.hints];
+      if (current.solution) ladder.push("Penyelesaian (beza daripada litar asal):\n" + (diffText(current.netlist, current.solution) || "(tiada beza)"));
+      const key = `${current.id}/${c.id}`;
+      const shown = hintLevel.get(key) ?? 0;
+      if (shown > 0) {
+        const box = document.createElement("div");
+        box.className = "hintbox";
+        ladder.slice(0, shown).forEach((h, i) => {
+          if (i === ladder.length - 1 && current.solution) {
+            const pre = document.createElement("pre");
+            pre.textContent = h;
+            box.append(pre);
+          } else {
+            const p = document.createElement("div");
+            p.textContent = `Petunjuk ${i + 1}: ${h}`;
+            box.append(p);
+          }
+        });
+        row.append(box);
+      }
+      if (shown < ladder.length) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "hint-btn";
+        btn.textContent = `Petunjuk (${shown + 1}/${ladder.length})`;
+        btn.addEventListener("click", () => {
+          hintLevel.set(key, shown + 1);
+          renderChecks(results);
+        });
+        row.append(btn);
+      }
+    }
+    els.checksEl.append(row);
+  }
+  if (results.every((c) => c.pass)) {
+    const d = document.createElement("div");
+    d.className = "done";
+    d.textContent = "Lesson siap! Semua semakan lulus.";
+    els.checksEl.append(d);
+  }
+}
+
+async function check() {
+  if (!current.checks.length) return;
+  const ok = await run();
+  if (!ok) return;
+  const results = runChecks(current.checks, lastRes, netlistRun);
+  renderChecks(results);
+  if (results.every((c) => c.pass) && !isDone(current)) {
+    store.set(`done:${current.id}`, "1");
+    renderOutline();
+  }
+}
+
 function showRunErrors(errors, fallback = "Ralat tidak diketahui.") {
   const { diagnostics, pdk, other } = parseNgspiceErrors(errors, netlistRun);
   runDiags = diagnostics;
@@ -263,7 +381,7 @@ async function run() {
       els.legend.innerHTML = "";
       setStatus("Error", "err");
       showRunErrors(errors, "Simulation gagal tanpa mesej error.");
-      return;
+      return false;
     }
 
     built = buildSignals(res, netlistRun);
@@ -275,6 +393,8 @@ async function run() {
     updateInfo();
     setStatus(`OK · ${res.numPoints} titik · ${ms} ms`, "ok");
     logLines(errors, errors.length ? "warn" : "");
+    lastRes = res;
+    return true;
   } catch (e) {
     if (e instanceof EngineAbortError) {
       setStatus(e.reason === "timeout" ? "Timeout" : "Engine dimulakan semula", "err");
@@ -289,6 +409,7 @@ async function run() {
       if (e?.errors?.length) showRunErrors(e.errors);
       else logLines([String(e?.message ?? e)], "err");
     }
+    return false;
   } finally {
     els.run.disabled = false;
     els.stop.disabled = true;
@@ -313,13 +434,6 @@ function exportCsv() {
   download("sky130-lab.csv", new Blob([toCsv(built.xLabel, built.x, series)], { type: "text/csv" }));
 }
 
-ALL.forEach((l, i) => {
-  const opt = document.createElement("option");
-  opt.value = String(i);
-  opt.textContent = l.title;
-  els.lesson.append(opt);
-});
-els.lesson.addEventListener("change", () => loadLesson(Number(els.lesson.value)));
 els.reset.addEventListener("click", () => loadLesson(ALL.indexOf(current), { reset: true }));
 els.share.addEventListener("click", async () => {
   const url = location.origin + location.pathname + encodeShare(editor.getValue());
@@ -331,6 +445,7 @@ els.share.addEventListener("click", async () => {
     setStatus("Pautan kongsi ada dalam bar alamat", "ok");
   }
 });
+els.check.addEventListener("click", check);
 els.run.addEventListener("click", run);
 els.stop.addEventListener("click", () => engine.stop());
 els.exprAdd.addEventListener("click", () => {

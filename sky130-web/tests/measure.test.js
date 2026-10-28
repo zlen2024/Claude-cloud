@@ -74,3 +74,18 @@ describe("measure", () => {
     expect(unwrapDeg([-170, -179, 178])).toEqual([-170, -179, -182]);
   });
 });
+
+import { vthExtrap } from "../src/measure.js";
+describe("vthExtrap", () => {
+  it("MOSFET segi empat sama: Id = k (Vgs - 0.5)^2 -> Vth ~ 0.5 (tangen di gm max)", () => {
+    const v = Array.from({ length: 181 }, (_, i) => i * 0.01);
+    // kuasa dua sehingga 1.0, kemudian linear (gm tepu), seperti peranti sebenar halaju tepu
+    const id = v.map((x) => (x < 0.5 ? 0 : x < 1 ? 1e-3 * (x - 0.5) ** 2 : 1e-3 * (0.25 + (x - 1) * 1)));
+    expect(vthExtrap(v, id)).toBeGreaterThan(0.5);
+    expect(vthExtrap(v, id)).toBeLessThan(0.9);
+  });
+  it("data terlalu pendek atau rata -> null", () => {
+    expect(vthExtrap([0, 1], [0, 1])).toBeNull();
+    expect(vthExtrap([0, 1, 2], [0, 0, 0])).toBeNull();
+  });
+});

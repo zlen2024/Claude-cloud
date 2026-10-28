@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 
-test("lesson 1: Run menghasilkan v(out) dalam legend", async ({ page }) => {
+const open = (page, id) => page.click(`[data-lesson="${id}"]`);
+
+test("lesson inverter VTC: Run menghasilkan v(out) dalam legend", async ({ page }) => {
   await page.goto("/");
+  await open(page, "b1-inverter-vtc");
   await page.click("#run");
   await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
   await expect(page.locator("#legend")).toContainText("v(out)");
@@ -61,20 +64,20 @@ test("UI kekal responsif semasa transient besar", async ({ page }) => {
 
 test("lesson sapuan bersarang melukis banyak lengkung", async ({ page }) => {
   await page.goto("/");
-  await page.selectOption("#lesson", "4");
+  await open(page, "a2-nmos-idvds");
   await page.click("#run");
   await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
   await page.fill("#expr", "-i(vd)");
   await page.click("#expr-add");
   await expect(page.locator("#legend")).toContainText("-i(vd)");
-  // 1 isyarat default (v(out)/v(in) tiada, jadi isyarat pertama) + terbitan = 2 curve x 5 segmen
+  // 1 isyarat default + terbitan = 2 lengkung x 5 segmen
   const n = Number(await page.locator("#plot").getAttribute("data-curves"));
   expect(n).toBeGreaterThan(5);
 });
 
 test("lesson AC: Bode dua panel, info PM dan zoom/kursor/eksport", async ({ page }) => {
   await page.goto("/");
-  await page.selectOption("#lesson", "5");
+  await open(page, "c1-cs-resistor");
   await page.click("#run");
   await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
   await expect(page.locator("#plot")).toHaveAttribute("data-panels", "2");
@@ -96,6 +99,7 @@ test("lesson AC: Bode dua panel, info PM dan zoom/kursor/eksport", async ({ page
 
 test("ungkapan tak sah tunjuk ralat", async ({ page }) => {
   await page.goto("/");
+  await open(page, "b1-inverter-vtc");
   await page.click("#run");
   await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
   await page.fill("#expr", "v(foo)+");

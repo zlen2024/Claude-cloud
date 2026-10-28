@@ -54,7 +54,7 @@ main {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(340px, 42%) 1fr;
+  grid-template-columns: 220px minmax(340px, 40%) 1fr;
 }
 
 .col {
@@ -74,7 +74,7 @@ main {
 
 .editor {
   flex: 1;
-  min-height: 160px;
+  min-height: 240px;
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
@@ -163,7 +163,48 @@ canvas { width: 100%; height: 100%; display: block; }
 
 @media (max-width: 860px) {
   main { grid-template-columns: 1fr; overflow: auto; }
+  .outline { max-height: 200px; border-right: 0; border-bottom: 1px solid var(--line); }
   .col + .col { border-left: 0; border-top: 1px solid var(--line); }
   textarea, .editor { min-height: 240px; }
   .plotwrap { min-height: 300px; }
 }
+
+.outline {
+  overflow: auto;
+  padding: 10px 8px;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+}
+.outline h3 { margin: 12px 8px 4px; font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
+.outline h3:first-child { margin-top: 2px; }
+.outline button {
+  display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 6px;
+  text-align: left; background: transparent; border: 1px solid transparent; padding: 5px 8px; font-size: 13px;
+}
+.outline button.active { background: #1b2230; border-color: var(--line); }
+.outline .tick { color: var(--ok); font-size: 12px; }
+
+.lesson-md { overflow: auto; max-height: 38%; font-size: 13px; padding-right: 4px; }
+.lesson-md h1 { font-size: 16px; margin: 0 0 6px; }
+.lesson-md h2 { font-size: 13px; margin: 12px 0 4px; color: var(--accent); }
+.lesson-md p, .lesson-md li { color: var(--text); margin: 4px 0; }
+.lesson-md ol, .lesson-md ul { padding-left: 20px; margin: 4px 0; }
+.lesson-md code { background: #1b2230; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.lesson-md blockquote { margin: 6px 0; padding-left: 10px; border-left: 3px solid var(--line); color: var(--muted); }
+
+.checks { display: flex; flex-direction: column; gap: 6px; font-size: 13px; max-height: 30%; overflow: auto; }
+.checks:empty { display: none; }
+.check { display: grid; grid-template-columns: 18px 1fr; gap: 2px 6px; }
+.check .mark.ok { color: var(--ok); }
+.check .mark.bad { color: var(--err); }
+.check .vals { color: var(--muted); font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.check .hintbox { grid-column: 2; color: var(--warn); }
+.check .hintbox pre { margin: 4px 0 0; padding: 6px 8px; background: #0b0f15; border: 1px solid var(--line); border-radius: 6px; color: var(--text); white-space: pre-wrap; }
+.check button { grid-column: 2; justify-self: start; padding: 2px 8px; font-size: 12px; }
+.checks .done { color: var(--ok); font-weight: 600; }
+
+@media (min-width: 861px) and (max-width: 1100px) {
+  main { grid-template-columns: 180px minmax(300px, 1fr) 1.2fr; }
+}
+
+main section.col:first-of-type { overflow-y: auto; }

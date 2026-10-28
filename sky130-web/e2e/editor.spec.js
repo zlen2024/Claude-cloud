@@ -48,7 +48,7 @@ test("autosave dan reset", async ({ page }) => {
   await page.reload();
   await expect(page.locator("#editor .cm-content")).toContainText("suntingan saya");
   await page.click("#reset");
-  await expect(page.locator("#editor .cm-content")).toContainText("SKY130 inverter");
+  await expect(page.locator("#editor .cm-content")).toContainText("SKY130 NMOS");
 });
 
 test("pautan kongsi pergi-balik ke Scratch", async ({ page, context }) => {
@@ -61,7 +61,7 @@ test("pautan kongsi pergi-balik ke Scratch", async ({ page, context }) => {
   const p2 = await context.newPage();
   await p2.goto(url);
   await expect(p2.locator("#editor .cm-content")).toContainText("kongsi ini");
-  await expect(p2.locator("#lesson option:checked")).toContainText("Scratch");
+  await expect(p2.locator("#outline button.active")).toContainText("Scratch");
 });
 
 test("Ctrl+Enter dalam editor menjalankan simulation", async ({ page }) => {

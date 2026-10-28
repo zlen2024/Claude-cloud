@@ -114,3 +114,18 @@ export function phaseMargin(freq, magDb, phaseDeg) {
   const p = valueAt(lf, ph, Math.log10(fu));
   return 180 + (p - ph[0]);
 }
+
+/**
+ * Vth dengan kaedah ekstrapolasi linear: tangen pada titik gm maksimum, dipotong pada Id = 0.
+ * vgs menaik, id positif (arus magnitud). null kalau data tak cukup.
+ */
+export function vthExtrap(vgs, id) {
+  if (vgs.length < 3) return null;
+  let best = -1, gmMax = 0;
+  for (let i = 1; i < vgs.length - 1; i++) {
+    const gm = (id[i + 1] - id[i - 1]) / (vgs[i + 1] - vgs[i - 1]);
+    if (gm > gmMax) { gmMax = gm; best = i; }
+  }
+  if (best < 0) return null;
+  return vgs[best] - id[best] / gmMax;
+}

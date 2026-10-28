@@ -26,7 +26,20 @@ Perintah lain:
 | `npm run smoke` | Jalankan semua lesson dalam Node dan semak keputusan masuk akal |
 | `npm run build` | Hasilkan folder `dist/` yang boleh di-host (GitHub Pages dll.) |
 
-## Lesson sekarang
+## Cara tambah lesson
+
+Cipta folder `src/lessons/<id>/` dengan:
+
+- `lesson.md`: frontmatter (`title`, `module` A-F, `order`) + teori BM, objektif dan tugasan.
+- `circuit.cir`: litar permulaan. Mesti simulate tanpa ralat dan **gagal sekurang-kurangnya satu semakan** (itulah tugasan).
+- `checks.js`: `export const checks = [{ id, label, run(result, h) => ({pass, actual, expected}), hints: [..maks 2] }]`.
+  `h` ada `sig(name)`, `mag`, `phase`, `x`, `segments` dan semua fungsi dalam `src/measure.js`.
+- `solution.cir`: penyelesaian. Mesti lulus semua semakan. Petunjuk ketiga ialah beza litar lawan penyelesaian.
+
+Lesson dipungut automatik (`import.meta.glob`). `npm test` menjalankan setiap `circuit.cir` dan `solution.cir` melalui engine.
+Komen dalam `checks.js` mesti merekod nilai rujukan daripada simulation dan pengiraan tangan.
+
+## Lesson (lama, sebelum Phase 5)
 
 1. Inverter CMOS: VTC (DC sweep)
 2. Inverter CMOS: transient dan delay

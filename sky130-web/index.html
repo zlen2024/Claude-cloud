@@ -8,15 +8,17 @@
   <body>
     <header>
       <h1>SKY130 Analog Lab <span>ngspice dalam browser</span></h1>
-      <select id="lesson" aria-label="Pilih lesson"></select>
     </header>
     <main>
+      <nav id="outline" class="outline" aria-label="Kursus"></nav>
       <section class="col">
-        <p class="desc" id="desc"></p>
+        <article id="lesson-md" class="lesson-md"></article>
         <div id="editor" class="editor"></div>
         <div id="hints" class="hints"></div>
+        <div id="checks" class="checks" aria-live="polite"></div>
         <div class="bar">
           <button id="run" class="primary">Run &#9654;</button>
+          <button id="check" title="Run dan semak tugasan">Semak &#10003;</button>
           <button id="stop" disabled>Stop &#9632;</button>
           <button id="reset">Reset lesson</button>
           <button id="share" title="Salin pautan kongsi">Kongsi</button>

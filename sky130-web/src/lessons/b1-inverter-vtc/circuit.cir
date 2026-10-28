@@ -1,0 +1,14 @@
+* SKY130 inverter - VTC (DC sweep)
+.param mc_switch=0
+.option scale=1.0u
+.include modelcard.skywater
+
+* xm<nama> drain gate source bulk model W L  (unit um)
+xm1 out in 0   0   sky130_fd_pr__nfet_01v8 w=1 l=0.15
+xm2 out in vdd vdd sky130_fd_pr__pfet_01v8 w=1 l=0.15
+
+vdd vdd 0 1.8
+vin in  0 0
+
+.dc vin 0 1.8 0.005
+.end
