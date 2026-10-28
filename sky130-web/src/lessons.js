@@ -86,4 +86,46 @@ vg  g   0 1.8
 .end
 `,
   },
+  {
+    id: "nmos-family",
+    title: "5. NMOS: keluarga Id lawan Vds (sapuan bersarang)",
+    description:
+      "Sapuan bersarang: Vds disapu 0 hingga 1.8V untuk setiap Vgs (0.6 hingga 1.8V). Setiap lengkung ialah satu Vgs. " +
+      "Tambah isyarat -i(vd) untuk Id positif. Cari di mana lengkung mendatar (saturation) dan di mana ia melengkung (triode).",
+    // W/L mesti bin yang sah: w=1 l=0.15 (lihat docs/engine-notes.md).
+    netlist: `* SKY130 NMOS - keluarga Id vs Vds
+${HEADER}
+
+xm1 d g 0 0 sky130_fd_pr__nfet_01v8 w=1 l=0.15
+
+vd d 0 0
+vg g 0 0
+
+* sapuan dalam: vd, sapuan luar: vg
+.dc vd 0 1.8 0.05 vg 0.6 1.8 0.3
+.end
+`,
+  },
+  {
+    id: "cs-ac",
+    title: "6. Common-source: gandaan dan lebar jalur (AC)",
+    description:
+      "NMOS dengan beban perintang 20k dan kapasitor 100f. Vin = 0.8V DC + isyarat AC 1V, jadi v(out) terus ialah gandaan. " +
+      "Lihat gandaan dalam dB dan frekuensi -3dB. Cuba ubah Rd dan Cl, dan perhatikan gandaan lawan lebar jalur.",
+    // Hand calc: Vout(DC) ~ 1.29V => Id = (1.8-1.29)/20k = 25.5uA, gm ~ 2Id/(Vgs-Vth) ~ 2*25.5u/0.3 ~ 170uS
+    // A0 = gm*(Rd||ro) ~ 4-6 (12-16 dB). f-3dB = 1/(2*pi*(Rd||ro)*Cl) ~ 80-160 MHz. Simulation: A0 = 13.98 dB.
+    netlist: `* SKY130 common-source amplifier - AC
+${HEADER}
+
+xm1 out in 0 0 sky130_fd_pr__nfet_01v8 w=3 l=0.5
+rd  vdd out 20k
+cl  out 0 100f
+
+vdd vdd 0 1.8
+vin in 0 dc 0.8 ac 1
+
+.ac dec 20 1 10G
+.end
+`,
+  },
 ];

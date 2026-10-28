@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { Simulation } from "eecircuit-engine";
 import { LESSONS } from "../src/lessons.js";
+import { buildSignals } from "../src/signals.js";
+import { f3db, unityGainFreq } from "../src/measure.js";
 
 const sig = (res, name) => {
   const d = res.data.find((x) => x.name === name);
@@ -32,6 +34,32 @@ const checks = {
     expect(i[0]).toBeLessThan(1e-6);
     expect(last(i)).toBeGreaterThan(2e-5);
   },
+  "nmos-family": (r, lesson) => {
+    const b = buildSignals(r, lesson.netlist);
+    expect(b.segments).toHaveLength(5);
+    expect(b.segLabels[4]).toBe("vg = 1.8");
+    const id = sig(r, "i(vd)").map((v) => -v);
+    const [s0, e0] = b.segments[0];
+    const [s4, e4] = b.segments[4];
+    expect(id[e4 - 1]).toBeGreaterThan(id[e0 - 1]);
+    // saturation: arus pada Vds=1.8 hampir sama dengan Vds=1.4 (kecerunan kecil) berbanding triode
+    expect(id[e4 - 1] / id[e4 - 9]).toBeLessThan(1.15);
+    expect(id[s4 + 2] / id[s4 + 1]).toBeGreaterThan(1.5);
+    expect(id[s0]).toBeCloseTo(0, 9);
+  },
+  "cs-ac": (r, lesson) => {
+    expect(r.dataType).toBe("complex");
+    const b = buildSignals(r, lesson.netlist);
+    const out = b.signals.find((s) => s.name === "v(out)");
+    expect(out.mag[0]).toBeGreaterThan(12);
+    expect(out.mag[0]).toBeLessThan(16);
+    const f = Array.from(b.x), m = Array.from(out.mag);
+    expect(f3db(f, m)).toBeGreaterThan(2e7);
+    expect(f3db(f, m)).toBeLessThan(3e8);
+    expect(unityGainFreq(f, m)).toBeGreaterThan(f3db(f, m));
+    // fasa DC ~ 180 darjah (penguat songsang)
+    expect(Math.abs(Math.abs(out.phase[0]) - 180)).toBeLessThan(5);
+  },
 };
 
 describe("lessons through ngspice-wasm", () => {
@@ -47,7 +75,7 @@ describe("lessons through ngspice-wasm", () => {
       const res = await sim.runSim();
       const errs = sim.getError().filter((l) => l.trim());
       expect(errs).toEqual([]);
-      checks[lesson.id](res);
+      checks[lesson.id](res, lesson);
     }, 60000);
   }
 });

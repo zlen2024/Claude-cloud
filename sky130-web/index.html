@@ -23,8 +23,17 @@
         </div>
       </section>
       <section class="col">
-        <div class="plotwrap"><canvas id="plot"></canvas></div>
+        <div class="plotwrap"><canvas id="plot" aria-label="Plot keputusan simulation"></canvas></div>
         <div id="legend" class="legend"></div>
+        <div class="bar tools">
+          <input id="expr" placeholder="Isyarat terbitan, contoh: -i(vd)   deriv(v(out))" spellcheck="false" aria-label="Ungkapan isyarat terbitan" />
+          <button id="expr-add">Tambah</button>
+          <button id="cur-a" title="Kursor A">A</button>
+          <button id="cur-b" title="Kursor B">B</button>
+          <button id="csv">CSV</button>
+          <button id="png">PNG</button>
+        </div>
+        <div id="info" class="info"></div>
         <pre id="log" class="log"></pre>
       </section>
     </main>

@@ -45,12 +45,20 @@ Lesson ada dalam `src/lessons.js`. Nak tambah lesson, tambah satu objek `{ id, t
 
 Tanpa `scale`, ngspice tak jumpa bin model yang sesuai ("could not find a valid modelname"). Tanpa `mc_switch`, parse model gagal.
 
+## Fitur plot (Phase 3)
+
+- Dua paksi Y: voltan (kiri), arus dan lain-lain (kanan). Chip legend tunjuk unit.
+- Isyarat terbitan: taip ungkapan seperti `-i(vd)`, `v(out)-v(in)`, `deriv(v(out))`, `db(v(out))` (tiada `eval`).
+- Sapuan `.dc` bersarang dilukis sebagai lengkung berasingan, dilabel ikut nilai sapuan luar.
+- `.ac`: paparan Bode (gandaan dB dan fasa), dengan A0, f-3dB, fu dan margin fasa.
+- Roda tetikus = zoom, seret = pan, dwiklik = reset. Butang A / B letak dua kursor (boleh diseret) dengan Δx dan Δy.
+- Eksport CSV dan PNG.
+- Perhatian bin W/L: lihat `docs/engine-notes.md` (contoh `w=2 l=0.5` tak sah).
+
 ## Had MVP (jujur)
 
 - Tiada schematic editor. Input ialah netlist teks.
 - Hanya model nfet/pfet 1.8V (nfet_01v8, pfet_01v8, pfet_01v8_hvt) yang disahkan di sini. Resistor, kapasitor dan BJT PDK belum diuji.
-- Analisis AC belum diplot. Nested sweep (`.dc` dua pembolehubah) belum diplot dengan betul.
-- Plot guna satu paksi Y, jadi pilih sama ada voltan atau arus pada satu masa.
 - Simulation jalan dalam Web Worker (ada butang Stop dan timeout 20s). Bundle ~20 MB (5.8 MB gzip).
 - UI belum diuji secara visual dalam browser oleh pembina. Engine dan semua lesson diuji dalam Node (`npm run smoke`) dan build Vite berjaya.
 

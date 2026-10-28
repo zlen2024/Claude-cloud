@@ -1,27 +1,24 @@
 import { Engine, EngineAbortError } from "./engine/client.js";
 import { LESSONS } from "./lessons.js";
-import { Plot, colorFor } from "./plot.js";
+import { Plot, colorFor, fmt } from "./plot.js";
+import { buildSignals, inferUnit, toCsv } from "./signals.js";
+import { evaluate, ExprError } from "./expr.js";
+import { f3db, unityGainFreq, phaseMargin } from "./measure.js";
 import "./style.css";
 
 const $ = (id) => document.getElementById(id);
 const els = {
-  lesson: $("lesson"),
-  desc: $("desc"),
-  editor: $("editor"),
-  run: $("run"),
-  reset: $("reset"),
-  stop: $("stop"),
-  status: $("status"),
-  legend: $("legend"),
-  log: $("log"),
-  plot: $("plot"),
+  lesson: $("lesson"), desc: $("desc"), editor: $("editor"), run: $("run"), reset: $("reset"), stop: $("stop"),
+  status: $("status"), legend: $("legend"), log: $("log"), plot: $("plot"), info: $("info"),
+  expr: $("expr"), exprAdd: $("expr-add"), curA: $("cur-a"), curB: $("cur-b"), csv: $("csv"), png: $("png"),
 };
 
 const plot = new Plot(els.plot);
 const engine = new Engine();
-let result = null;
-let xData = null;
-let signals = []; // { name, values, color, on }
+let built = null; // keluaran buildSignals
+let items = []; // { name, unit, values|mag+phase, color, on, derived }
+let exprs = []; // ungkapan terbitan (dinilai semula selepas setiap run)
+let netlistRun = "";
 
 function setStatus(text, kind = "") {
   els.status.textContent = text;
@@ -37,26 +34,26 @@ function loadLesson(index) {
   const lesson = LESSONS[index];
   els.editor.value = lesson.netlist;
   els.desc.textContent = lesson.description;
-  result = null;
+  built = null;
+  items = [];
+  exprs = [];
   els.legend.innerHTML = "";
+  els.info.textContent = "";
+  plot.cursors = { A: null, B: null };
+  syncCursorButtons();
   plot.clear();
   logLines([]);
 }
 
-function isPlottable(name, i) {
-  // index 0 = paksi x; buang node dalaman model (#body, #dbody, ...)
-  return i > 0 && !name.includes("#");
-}
-
-function defaultOn(name, nameList) {
-  const preferred = nameList.filter((n) => /^v\(out\)$/i.test(n) || /^v\(in\)$/i.test(n));
-  if (preferred.length) return preferred.includes(name);
-  return name === nameList[0];
+function defaultOn(name, all) {
+  const re = built.kind === "ac" ? /^v\(out\)$/i : /^v\((out|in)\)$/i;
+  const preferred = all.filter((n) => re.test(n));
+  return preferred.length ? preferred.includes(name) : name === all[0];
 }
 
 function renderLegend() {
   els.legend.innerHTML = "";
-  for (const s of signals) {
+  for (const s of items) {
     const label = document.createElement("label");
     label.className = "chip";
     label.style.setProperty("--c", s.color);
@@ -68,14 +65,118 @@ function renderLegend() {
       redraw();
     });
     label.append(cb, document.createTextNode(s.name));
+    if (s.unit) {
+      const u = document.createElement("small");
+      u.textContent = `[${s.unit}]`;
+      label.append(u);
+    }
+    if (s.derived) {
+      const rm = document.createElement("button");
+      rm.className = "rm";
+      rm.type = "button";
+      rm.textContent = "×";
+      rm.title = "Buang";
+      rm.addEventListener("click", (e) => {
+        e.preventDefault();
+        exprs = exprs.filter((x) => x !== s.name);
+        items = items.filter((x) => x !== s);
+        renderLegend();
+        redraw();
+      });
+      label.append(rm);
+    }
     els.legend.append(label);
   }
 }
 
+function plotData() {
+  const active = items.filter((s) => s.on);
+  const { x, xLabel, xLog, segments, segLabels } = built;
+  if (built.kind === "ac") {
+    return {
+      x, xLabel, xLog, segments, segLabels,
+      panels: [
+        { axisLabels: { L: "gandaan (dB)" }, curves: active.map((s) => ({ name: `${s.name} (dB)`, values: s.mag, color: s.color })) },
+        { axisLabels: { L: "fasa (°)" }, curves: active.map((s) => ({ name: `${s.name} (°)`, values: s.phase, color: s.color })) },
+      ],
+    };
+  }
+  const curves = active.map((s) => ({ name: s.name, values: s.values, color: s.color, axis: s.unit === "V" ? "L" : "R" }));
+  const hasA = active.some((s) => s.unit === "A");
+  const hasV = active.some((s) => s.unit === "V");
+  return {
+    x, xLabel, xLog, segments, segLabels,
+    panels: [{ axisLabels: { L: hasV ? "V" : "", R: hasA ? "A" : "" }, curves }],
+  };
+}
+
+function updateInfo() {
+  const lines = [];
+  if (built?.kind === "ac") {
+    const s = items.find((i) => i.on && /^v\(out\)$/i.test(i.name)) ?? items.find((i) => i.on);
+    if (s) {
+      const f = Array.from(built.x);
+      const fu = unityGainFreq(f, Array.from(s.mag));
+      const f3 = f3db(f, Array.from(s.mag));
+      const pm = phaseMargin(f, Array.from(s.mag), Array.from(s.phase));
+      lines.push(
+        `${s.name}: A0 = ${s.mag[0].toFixed(1)} dB · f-3dB = ${f3 ? fmt(f3) + "Hz" : "-"} · ` +
+          `fu = ${fu ? fmt(fu) + "Hz" : "-"} · PM = ${pm === null ? "-" : pm.toFixed(1) + "°"}`,
+      );
+    }
+  }
+  const { A, B } = plot.cursors;
+  if (A !== null || B !== null) {
+    const a = A !== null ? plot.valuesAt(A) : null;
+    const b = B !== null ? plot.valuesAt(B) : null;
+    const xl = built?.kind === "ac" ? "f" : (built?.xLabel ?? "x");
+    if (A !== null) lines.push(`A: ${xl} = ${fmt(A)}`);
+    if (B !== null) lines.push(`B: ${xl} = ${fmt(B)}`);
+    if (a && b) lines.push(`Δ${xl} = ${fmt(B - A)}`);
+    (a ?? b ?? []).forEach((v, i) => {
+      const parts = [];
+      if (a) parts.push(`A=${v.y === null ? "-" : fmt(a[i].y)}`);
+      if (b) parts.push(`B=${fmt(b[i].y)}`);
+      if (a && b && a[i].y !== null && b[i].y !== null) parts.push(`Δ=${fmt(b[i].y - a[i].y)}`);
+      lines.push(`  ${v.name}: ${parts.join("  ")}`);
+    });
+  }
+  els.info.textContent = lines.join("\n");
+}
+
 function redraw() {
-  if (!result) return plot.clear();
-  const active = signals.filter((s) => s.on);
-  plot.set(xData, result.data[0].name, active);
+  if (!built) return plot.clear();
+  plot.set(plotData(), { keepView: true });
+  updateInfo();
+}
+
+function syncCursorButtons() {
+  els.curA.classList.toggle("on", plot.cursors.A !== null);
+  els.curB.classList.toggle("on", plot.cursors.B !== null);
+}
+plot.onCursors = () => {
+  syncCursorButtons();
+  updateInfo();
+};
+
+function addDerived(src, { quiet = false } = {}) {
+  if (!built || built.kind !== "real") {
+    if (!quiet) logLines(["Ungkapan terbitan hanya untuk keputusan .dc dan .tran."], "err");
+    return false;
+  }
+  try {
+    const signals = {};
+    for (const s of items.filter((i) => !i.derived)) signals[s.name] = s.values;
+    const values = evaluate(src, { signals, x: built.x, segments: built.segments });
+    items.push({
+      name: src, unit: inferUnit(src, items.filter((i) => !i.derived)), values,
+      color: colorFor(items.length), on: true, derived: true,
+    });
+    return true;
+  } catch (e) {
+    if (!quiet) logLines([e instanceof ExprError ? `Ungkapan: ${e.message} (pos ${e.pos})` : String(e)], "err");
+    return false;
+  }
 }
 
 async function run() {
@@ -83,39 +184,25 @@ async function run() {
   els.stop.disabled = false;
   try {
     setStatus("Simulating…", "busy");
-    const { result: res, errors, ms } = await engine.run(els.editor.value);
+    netlistRun = els.editor.value;
+    const { result: res, errors, ms } = await engine.run(netlistRun);
 
     if (!res || res.numVariables === 0 || res.data.length === 0) {
-      result = null;
+      built = null;
       plot.clear();
       els.legend.innerHTML = "";
       setStatus("Error", "err");
       logLines(errors.length ? errors : ["Simulation gagal tanpa mesej error."], "err");
       return;
     }
-    if (res.dataType === "complex") {
-      result = null;
-      plot.clear();
-      setStatus("AC belum disokong", "err");
-      logLines(["Analisis AC (complex) belum ada dalam plot MVP ni. Guna .dc atau .tran dulu."], "err");
-      return;
-    }
 
-    result = res;
-    xData = res.data[0].values;
-    const names = res.data.map((d) => d.name).filter(isPlottable);
-    let ci = 0;
-    signals = res.data
-      .map((d, i) => ({ d, i }))
-      .filter(({ d, i }) => isPlottable(d.name, i))
-      .map(({ d }) => ({
-        name: d.name,
-        values: d.values,
-        color: colorFor(ci++),
-        on: defaultOn(d.name, names),
-      }));
+    built = buildSignals(res, netlistRun);
+    const names = built.signals.map((s) => s.name);
+    items = built.signals.map((s, i) => ({ ...s, color: colorFor(i), on: defaultOn(s.name, names) }));
+    exprs = exprs.filter((src) => addDerived(src, { quiet: true }));
     renderLegend();
-    redraw();
+    plot.set(plotData());
+    updateInfo();
     setStatus(`OK · ${res.numPoints} titik · ${ms} ms`, "ok");
     logLines(errors, errors.length ? "warn" : "");
   } catch (e) {
@@ -137,6 +224,24 @@ async function run() {
   }
 }
 
+function download(name, blob) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function exportCsv() {
+  if (!built) return;
+  const active = items.filter((s) => s.on);
+  const series =
+    built.kind === "ac"
+      ? active.flatMap((s) => [{ name: `${s.name} (dB)`, values: s.mag }, { name: `${s.name} (deg)`, values: s.phase }])
+      : active;
+  download("sky130-lab.csv", new Blob([toCsv(built.xLabel, built.x, series)], { type: "text/csv" }));
+}
+
 LESSONS.forEach((l, i) => {
   const opt = document.createElement("option");
   opt.value = String(i);
@@ -147,6 +252,22 @@ els.lesson.addEventListener("change", () => loadLesson(Number(els.lesson.value))
 els.reset.addEventListener("click", () => loadLesson(Number(els.lesson.value)));
 els.run.addEventListener("click", run);
 els.stop.addEventListener("click", () => engine.stop());
+els.exprAdd.addEventListener("click", () => {
+  const src = els.expr.value.trim();
+  if (!src) return;
+  if (addDerived(src)) {
+    exprs.push(src);
+    els.expr.value = "";
+    logLines([]);
+    renderLegend();
+    redraw();
+  }
+});
+els.expr.addEventListener("keydown", (e) => e.key === "Enter" && els.exprAdd.click());
+els.curA.addEventListener("click", () => plot.toggleCursor("A"));
+els.curB.addEventListener("click", () => plot.toggleCursor("B"));
+els.csv.addEventListener("click", exportCsv);
+els.png.addEventListener("click", async () => built && download("sky130-lab.png", await plot.toPng()));
 els.editor.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
     e.preventDefault();

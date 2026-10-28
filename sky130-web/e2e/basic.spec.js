@@ -58,3 +58,47 @@ test("UI kekal responsif semasa transient besar", async ({ page }) => {
   const n = Number((await page.locator("#status").innerText()).match(/(\d+) titik/)[1]);
   console.log("titik:", n);
 });
+
+test("lesson sapuan bersarang melukis banyak lengkung", async ({ page }) => {
+  await page.goto("/");
+  await page.selectOption("#lesson", "4");
+  await page.click("#run");
+  await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
+  await page.fill("#expr", "-i(vd)");
+  await page.click("#expr-add");
+  await expect(page.locator("#legend")).toContainText("-i(vd)");
+  // 1 isyarat default (v(out)/v(in) tiada, jadi isyarat pertama) + terbitan = 2 curve x 5 segmen
+  const n = Number(await page.locator("#plot").getAttribute("data-curves"));
+  expect(n).toBeGreaterThan(5);
+});
+
+test("lesson AC: Bode dua panel, info PM dan zoom/kursor/eksport", async ({ page }) => {
+  await page.goto("/");
+  await page.selectOption("#lesson", "5");
+  await page.click("#run");
+  await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
+  await expect(page.locator("#plot")).toHaveAttribute("data-panels", "2");
+  await expect(page.locator("#info")).toContainText("A0 =");
+  await expect(page.locator("#info")).toContainText("PM =");
+  await page.click("#cur-a");
+  await page.click("#cur-b");
+  await expect(page.locator("#info")).toContainText("Δ");
+  const box = await page.locator("#plot").boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -300);
+  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#csv")]);
+  expect(dl.suggestedFilename()).toBe("sky130-lab.csv");
+  const [png] = await Promise.all([page.waitForEvent("download"), page.click("#png")]);
+  expect(png.suggestedFilename()).toBe("sky130-lab.png");
+  await page.screenshot({ path: "test-results/bode.png" });
+});
+
+test("ungkapan tak sah tunjuk ralat", async ({ page }) => {
+  await page.goto("/");
+  await page.click("#run");
+  await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
+  await page.fill("#expr", "v(foo)+");
+  await page.click("#expr-add");
+  await expect(page.locator("#log")).toContainText("Ungkapan");
+});
