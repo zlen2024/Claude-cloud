@@ -1,0 +1,17 @@
+{
+  "inverting": {
+    "label": "Inverting amplifier (low-frequency phase ≈ 180°)",
+    "hints": []
+  },
+  "gain": {
+    "label": "A0 above 35 dB",
+    "hints": [
+      "High gain only occurs if Vout is mid-range and both transistors are in saturation. Where is Vout now?",
+      "Sweep Vin (.dc vin 0.5 1.0 0.0005) and find the Vin where v(out) = 0.9 V. It is about 0.61 V."
+    ]
+  },
+  "pole": {
+    "label": "f-3dB below 3 MHz and fu above 10 MHz",
+    "hints": []
+  }
+}

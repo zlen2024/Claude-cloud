@@ -1,0 +1,17 @@
+{
+  "phase": {
+    "label": "Non-inverting (phase ≈ 0°)",
+    "hints": []
+  },
+  "gain": {
+    "label": "Linear gain above 0.78 (and below 1)",
+    "hints": [
+      "Gain ≈ gm·RL'/(1 + gm·RL'). What raises gm and RL'?",
+      "Raise RL to 100k and W to 7."
+    ]
+  },
+  "bw": {
+    "label": "f-3dB above 100 MHz",
+    "hints": []
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "swing": {
+    "label": "Output swings fully (min < 0.2 V, max > 1.6 V)",
+    "hints": []
+  },
+  "tpd": {
+    "label": "tpd below 80 ps",
+    "hints": [
+      "Ron is inversely proportional to W. What should be made larger?",
+      "Try Wn = 1 and Wp = 3 (both valid bins)."
+    ]
+  }
+}

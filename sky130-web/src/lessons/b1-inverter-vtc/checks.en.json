@@ -1,0 +1,13 @@
+{
+  "rails": {
+    "label": "Vout(Vin=0) ≈ 1.8 V and Vout(Vin=1.8) ≈ 0 V",
+    "hints": []
+  },
+  "vm": {
+    "label": "VM within 0.9 V ± 0.04 V",
+    "hints": [
+      "A VM that is too low means the PMOS is too weak. What strengthens the PMOS?",
+      "Increase the PMOS W. W = 3 is valid."
+    ]
+  }
+}

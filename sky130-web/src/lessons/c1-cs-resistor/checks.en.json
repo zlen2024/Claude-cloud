@@ -1,0 +1,19 @@
+{
+  "inverting": {
+    "label": "Low-frequency phase ≈ 180° (inverting amplifier)",
+    "hints": []
+  },
+  "gain": {
+    "label": "Low-frequency gain above 18 dB",
+    "hints": [
+      "A0 = gm · (Rd ∥ ro). Which variable can you change easily?",
+      "Increase Rd. Try 50k."
+    ]
+  },
+  "bandwidth": {
+    "label": "f-3dB above 20 MHz",
+    "hints": [
+      "Too large an Rd lowers the bandwidth: f-3dB ~ 1/(2π Rd Cl)."
+    ]
+  }
+}

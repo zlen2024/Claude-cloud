@@ -1,0 +1,17 @@
+{
+  "balanced": {
+    "label": "Balanced: Vo2 - Vo1 = 0 at Vin1 = Vin2 (±20 mV)",
+    "hints": []
+  },
+  "gain": {
+    "label": "Differential gain (slope at 0.9 V) above 3",
+    "hints": [
+      "Av = gm · Rd. gm is set by Iss and size. What else sets the gain?",
+      "Raise Rd to 10k."
+    ]
+  },
+  "limit": {
+    "label": "Does not exceed the saturation limit Iss · Rd",
+    "hints": []
+  }
+}

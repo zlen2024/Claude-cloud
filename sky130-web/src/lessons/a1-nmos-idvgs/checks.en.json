@@ -1,0 +1,19 @@
+{
+  "vth": {
+    "label": "Vth (linear extrapolation) between 0.55 V and 0.9 V",
+    "hints": [
+      "Keep Vds small (vd = 0.05) and sweep Vgs past Vth."
+    ]
+  },
+  "off": {
+    "label": "Id at Vgs = 0 below 1 nA",
+    "hints": []
+  },
+  "drive": {
+    "label": "Id at Vgs = 1.8 V above 150 µA",
+    "hints": [
+      "Current scales with W/L. What needs to change on the xm1 line?",
+      "Increase W. W = 3 is a valid bin."
+    ]
+  }
+}

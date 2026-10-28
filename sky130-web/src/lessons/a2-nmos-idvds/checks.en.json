@@ -1,0 +1,15 @@
+{
+  "curves": {
+    "label": "Five curves (Vgs = 0.6 to 1.8 V)",
+    "hints": [
+      "Leave the .dc line as it is: two sweeps."
+    ]
+  },
+  "saturation": {
+    "label": "Id(Vds=1.8)/Id(Vds=1.0) < 1.07 at the highest Vgs",
+    "hints": [
+      "The slope in saturation is 1/ro. What makes ro larger?",
+      "Lengthen the channel: change L on xm1. L = 0.5 is valid for W = 1."
+    ]
+  }
+}

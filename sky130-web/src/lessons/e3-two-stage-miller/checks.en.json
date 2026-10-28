@@ -1,0 +1,19 @@
+{
+  "a0": {
+    "label": "A0 above 60 dB",
+    "hints": []
+  },
+  "pm": {
+    "label": "Phase margin above 55°",
+    "hints": [
+      "The second pole must be far above fu. How does the Miller capacitor affect fu?",
+      "Raise Cc. Try 4p."
+    ]
+  },
+  "fu": {
+    "label": "Unity-gain frequency above 5 MHz",
+    "hints": [
+      "A too-large Cc lowers fu (fu ≈ gm1/(2π Cc))."
+    ]
+  }
+}

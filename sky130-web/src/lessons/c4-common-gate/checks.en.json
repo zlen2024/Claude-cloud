@@ -1,0 +1,17 @@
+{
+  "phase": {
+    "label": "Non-inverting (phase ≈ 0°)",
+    "hints": []
+  },
+  "gain": {
+    "label": "A0 above 16 dB",
+    "hints": [
+      "A0 ≈ gm · Rd. What can be changed easily?",
+      "Raise Rd to 20k."
+    ]
+  },
+  "bw": {
+    "label": "f-3dB above 50 MHz",
+    "hints": []
+  }
+}

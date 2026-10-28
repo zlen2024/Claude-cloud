@@ -1,0 +1,13 @@
+{
+  "gain": {
+    "label": "Peak gain |Av| above 5",
+    "hints": []
+  },
+  "balance": {
+    "label": "|NMH - NML| below 0.1 V",
+    "hints": [
+      "NMH larger than NML means the PMOS is too weak. How do you strengthen it?",
+      "Increase the PMOS W to 3."
+    ]
+  }
+}

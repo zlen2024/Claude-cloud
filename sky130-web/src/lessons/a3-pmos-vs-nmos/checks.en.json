@@ -1,0 +1,13 @@
+{
+  "nmos-on": {
+    "label": "NMOS carries more than 300 µA at Vgs = 1.8 V",
+    "hints": []
+  },
+  "ratio": {
+    "label": "Ip / In between 0.75 and 1.25",
+    "hints": [
+      "The current ratio for equal W is about 0.4. By what factor must the PMOS W grow?",
+      "Try PMOS W = 2 (a valid bin for L = 0.15)."
+    ]
+  }
+}

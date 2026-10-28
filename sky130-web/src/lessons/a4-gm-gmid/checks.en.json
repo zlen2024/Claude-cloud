@@ -1,0 +1,13 @@
+{
+  "peak": {
+    "label": "Peak gm/Id between 25 and 35 /V (weak inversion)",
+    "hints": []
+  },
+  "gmid10": {
+    "label": "gm/Id at Id = 10 µA above 15 /V",
+    "hints": [
+      "For a fixed current, larger W/L moves the transistor toward weaker inversion.",
+      "Increase W. W = 7 is a valid bin for L = 0.5."
+    ]
+  }
+}

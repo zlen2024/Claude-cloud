@@ -1,0 +1,17 @@
+{
+  "gain": {
+    "label": "A0 above 35 dB",
+    "hints": [
+      "A0 = gm1 · (ro2 ∥ ro4). Raising gm1 at fixed current needs a larger W/L.",
+      "Raise the W of xm1 and xm2 to 3."
+    ]
+  },
+  "fu": {
+    "label": "Unity-gain frequency above 20 MHz",
+    "hints": []
+  },
+  "pm": {
+    "label": "Phase margin above 60° (single pole)",
+    "hints": []
+  }
+}

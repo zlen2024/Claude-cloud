@@ -14,7 +14,7 @@ export const checks = [
       const m = measure(h);
       const v = Array.from(h.sig("v(n1)")).filter((_, i) => h.x[i] > 5e-9);
       const sw = h.max(v) - h.min(v);
-      return { pass: m.cycles > 10 && sw > 1.6, actual: `${m.cycles} kitaran, ayunan ${sw.toFixed(2)} V`, expected: "> 10 kitaran, > 1.6 V" };
+      return { pass: m.cycles > 10 && sw > 1.6, actual: `${m.cycles} cycles, ${sw.toFixed(2)} V`, expected: "> 10 cycles, > 1.6 V" };
     },
     hints: [],
   },

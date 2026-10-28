@@ -126,3 +126,15 @@ test("navigasi papan kekunci: Tab sampai ke butang Run dengan fokus kelihatan", 
   await page.keyboard.press("Enter");
   await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
 });
+
+test("tukar ke English: teks lesson dan semakan turut bertukar", async ({ page }) => {
+  await page.goto("/");
+  await page.click("#lang-btn");
+  await expect(page.locator("#lesson-md h1")).toHaveText("NMOS: Id vs Vgs");
+  await expect(page.locator('[data-lesson="a1-nmos-idvgs"]')).toContainText("NMOS Id vs Vgs and Vth");
+  await page.click("#check");
+  await expect(page.locator('.check[data-check="drive"]')).toContainText("above 150", { timeout: 60000 });
+  await page.click("#lang-btn");
+  await expect(page.locator('.check[data-check="drive"]')).toContainText("lebih daripada 150");
+  await expect(page.locator("#lesson-md h1")).toHaveText("NMOS: Id lawan Vgs");
+});

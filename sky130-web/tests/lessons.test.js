@@ -18,6 +18,20 @@ describe("lesson registry", () => {
   });
 });
 
+describe("terjemahan Inggeris", () => {
+  it("setiap lesson ada lesson.en.md dan checks.en.json yang sepadan dengan semakan BM", () => {
+    for (const l of LESSONS) {
+      expect(l.en?.title, l.id).toBeTruthy();
+      expect(l.en.md.length, l.id).toBeGreaterThan(50);
+      for (const c of l.checks) {
+        const e = l.en.checks[c.id];
+        expect(e?.label, `${l.id}/${c.id}`).toBeTruthy();
+        expect(e.hints.length, `${l.id}/${c.id} hints`).toBe((c.hints ?? []).length);
+      }
+    }
+  });
+});
+
 describe("lessons through ngspice-wasm", () => {
   let sim;
   beforeAll(async () => {

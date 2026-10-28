@@ -1,0 +1,19 @@
+{
+  "ro1": {
+    "label": "ro of xm1 (L = 0.15) between 20 kΩ and 80 kΩ",
+    "hints": []
+  },
+  "ro2": {
+    "label": "ro of xm2 more than 3 times ro of xm1",
+    "hints": [
+      "ro depends on L. What happens if xm2 is made longer?",
+      "Change l=0.15 to l=0.5 on xm2."
+    ]
+  },
+  "ro3": {
+    "label": "ro of xm3 more than 5 times ro of xm1",
+    "hints": [
+      "Use an even longer L for xm3. W = 1 is valid for all L."
+    ]
+  }
+}

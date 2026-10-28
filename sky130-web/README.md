@@ -71,7 +71,7 @@ Lesson dipungut automatik (`import.meta.glob`) dan `npm test` mengesahkannya mel
 nilai rujukan daripada simulation dan pengiraan tangan. Bin W/L SKY130 terhad, lihat `docs/engine-notes.md`
 (contoh `w=2 l=0.5` tak sah; W = 1, 3, 5, 7 sah untuk semua L).
 
-Terjemahan Inggeris untuk UI ada dalam `src/i18n/en.json`. Teks lesson buat masa ini dalam BM sahaja.
+Butang **EN/BM** di header menukar UI dan lesson. Terjemahan UI: `src/i18n/en.json`. Terjemahan lesson: `lesson.en.md` dan `checks.en.json` (label dan petunjuk ikut `id` semakan) dalam setiap folder lesson; `npm test` pastikan semuanya lengkap.
 
 ## Seni bina
 
@@ -95,7 +95,7 @@ Terjemahan Inggeris untuk UI ada dalam `src/i18n/en.json`. Teks lesson buat masa
 - Hanya sudut `tt`; tiada Monte Carlo. Tiada layout, DRC atau LVS.
 - Skema ialah paparan sahaja (label net, bukan wayar). Editor skema dijadualkan v1.1.
 - Ungkapan terbitan tidak disokong untuk keputusan `.ac`.
-- Teks lesson dalam BM sahaja; UI dwibahasa.
+- Nama sebahagian peranti dan istilah dalam komen `checks.js` kekal dalam BM.
 - Engine ~20 MB: muat turun pertama lambat; selepas itu dicache.
 - Simulation tidak boleh diinterupsi dengan bersih; Stop membuang worker dan mencipta yang baru.
 

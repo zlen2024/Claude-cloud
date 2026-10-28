@@ -1,5 +1,5 @@
 import { Engine, EngineAbortError } from "./engine/client.js";
-import { LESSONS, SCRATCH, MODULES } from "./lessons/index.js";
+import { LESSONS, SCRATCH, MODULES, lessonTitle, lessonMd, checkText } from "./lessons/index.js";
 import { runChecks } from "./checks.js";
 import { diffText } from "./diff.js";
 import { marked } from "marked";
@@ -136,12 +136,13 @@ function loadLesson(index, { text, reset = false } = {}) {
   renderOutline();
   els.check.hidden = lesson.checks.length === 0;
   els.checksEl.innerHTML = "";
+  lastResults = null;
   if (reset) store.remove(`netlist:${lesson.id}`);
   editor.setValue(text ?? store.get(`netlist:${lesson.id}`) ?? lesson.netlist);
   if (text !== undefined) store.set(`netlist:${lesson.id}`, text);
   runDiags = [];
   refreshLint();
-  els.lessonMd.innerHTML = marked.parse(lesson.md);
+  els.lessonMd.innerHTML = marked.parse(lessonMd(lesson, getLang()));
   els.lessonMd.scrollTop = 0;
   built = null;
   items = [];
@@ -300,7 +301,7 @@ function renderOutline() {
     b.className = l === current ? "active" : "";
     b.setAttribute("aria-current", l === current ? "true" : "false");
     const label = document.createElement("span");
-    label.textContent = l.title;
+    label.textContent = lessonTitle(l, getLang());
     b.append(label);
     if (isDone(l)) {
       const k = document.createElement("span");
@@ -328,7 +329,9 @@ function renderOutline() {
 
 const hintLevel = new Map();
 
+let lastResults = null;
 function renderChecks(results) {
+  lastResults = results;
   els.checksEl.innerHTML = "";
   for (const c of results) {
     const row = document.createElement("div");
@@ -339,14 +342,15 @@ function renderChecks(results) {
     mark.className = `mark ${c.pass ? "ok" : "bad"}`;
     mark.textContent = c.pass ? "✓" : "✗";
     const body = document.createElement("div");
-    body.textContent = c.label;
+    const tx = checkText(current, c, getLang());
+    body.textContent = tx.label;
     const vals = document.createElement("div");
     vals.className = "vals";
     vals.textContent = `${t("check.actual", { v: c.actual })}   ${t("check.expected", { v: c.expected })}`;
     body.append(vals);
     row.append(mark, body);
     if (!c.pass) {
-      const ladder = [...c.hints];
+      const ladder = [...tx.hints];
       if (current.solution) ladder.push(t("check.solution") + "\n" + (diffText(current.netlist, current.solution) || t("check.nodiff")));
       const key = `${current.id}/${c.id}`;
       const shown = hintLevel.get(key) ?? 0;
@@ -548,6 +552,8 @@ els.aboutBtn.addEventListener("click", () => {
   els.about.showModal();
 });
 onLangChange(() => {
+  els.lessonMd.innerHTML = marked.parse(lessonMd(current, getLang()));
+  if (lastResults && els.checksEl.children.length) renderChecks(lastResults);
   renderOutline();
   refreshLint();
   renderSchem();

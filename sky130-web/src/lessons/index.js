@@ -5,6 +5,8 @@ const md = import.meta.glob("./*/lesson.md", { query: "?raw", import: "default",
 const cir = import.meta.glob("./*/circuit.cir", { query: "?raw", import: "default", eager: true });
 const sol = import.meta.glob("./*/solution.cir", { query: "?raw", import: "default", eager: true });
 const chk = import.meta.glob("./*/checks.js", { eager: true });
+const mdEn = import.meta.glob("./*/lesson.en.md", { query: "?raw", import: "default", eager: true });
+const chkEn = import.meta.glob("./*/checks.en.json", { import: "default", eager: true });
 const lay = import.meta.glob("./*/layout.json", { import: "default", eager: true });
 
 export const MODULES = {
@@ -30,6 +32,12 @@ export const LESSONS = Object.keys(md)
       module: meta.module ?? "A",
       order: meta.order ?? 0,
       md: body,
+      en: (() => {
+        const raw = mdEn[`./${dir}/lesson.en.md`];
+        if (!raw) return null;
+        const fm = parseFrontmatter(raw);
+        return { title: fm.meta.title, md: fm.body, checks: chkEn[`./${dir}/checks.en.json`] ?? {} };
+      })(),
       netlist: cir[`./${dir}/circuit.cir`],
       solution: sol[`./${dir}/solution.cir`] ?? null,
       checks: chk[`./${dir}/checks.js`]?.checks ?? [],
@@ -41,6 +49,7 @@ export const LESSONS = Object.keys(md)
 export const SCRATCH = {
   id: "scratch",
   title: "Scratch (netlist bebas)",
+  en: { title: "Scratch (free netlist)", md: "# Scratch\n\nA free area for your own netlists. Share links open here.", checks: {} },
   md: "# Scratch\n\nRuang bebas untuk netlist sendiri. Pautan kongsi dibuka di sini.",
   netlist: `* Scratch
 ${HEADER}
@@ -57,3 +66,11 @@ vg g 0 0
   checks: [],
   layout: {},
 };
+
+/** Teks lesson mengikut bahasa; jatuh balik ke BM bila terjemahan tiada. */
+export const lessonTitle = (l, lang) => (lang === "en" && l.en?.title) || l.title;
+export const lessonMd = (l, lang) => (lang === "en" && l.en?.md) || l.md;
+export function checkText(l, c, lang) {
+  const e = lang === "en" ? l.en?.checks?.[c.id] : null;
+  return { label: e?.label ?? c.label, hints: e?.hints ?? c.hints ?? [] };
+}

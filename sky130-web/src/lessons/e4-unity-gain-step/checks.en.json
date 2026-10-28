@@ -1,0 +1,19 @@
+{
+  "final": {
+    "label": "Final value within 10 mV of 1.0 V",
+    "hints": []
+  },
+  "overshoot": {
+    "label": "Overshoot below 10%",
+    "hints": [
+      "Large overshoot means low phase margin. Which parameter in the previous lesson raises phase margin?",
+      "Raise Cc to 2p."
+    ]
+  },
+  "settle": {
+    "label": "Settling to 1 mV in under 100 ns",
+    "hints": [
+      "Do not make Cc too large: settling becomes slow."
+    ]
+  }
+}

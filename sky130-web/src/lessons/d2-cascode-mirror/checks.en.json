@@ -1,0 +1,13 @@
+{
+  "ratio": {
+    "label": "Iout(Vo = 1.5 V) within ±5% of Iref",
+    "hints": []
+  },
+  "ro": {
+    "label": "Output resistance (Vo 1.4 - 1.7 V) above 5 MΩ",
+    "hints": [
+      "The basic mirror only has the ro of xm2. How can that ro be hidden from Vo?",
+      "Put one transistor (xm4) above xm2, with its gate on the diode node biased by xm3 above xm1. See the solution."
+    ]
+  }
+}

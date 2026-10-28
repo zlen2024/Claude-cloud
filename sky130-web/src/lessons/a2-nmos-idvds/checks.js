@@ -9,7 +9,7 @@ export const checks = [
   {
     id: "curves",
     label: "Lima lengkung (Vgs = 0.6 hingga 1.8 V)",
-    run: (_r, h) => ({ pass: h.segments.length === 5, actual: `${h.segments.length} lengkung`, expected: "5" }),
+    run: (_r, h) => ({ pass: h.segments.length === 5, actual: `${h.segments.length}`, expected: "5" }),
     hints: ["Biarkan baris .dc seperti asal: dua sapuan."],
   },
   {

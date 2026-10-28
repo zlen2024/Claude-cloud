@@ -1,0 +1,13 @@
+{
+  "start": {
+    "label": "Iref at VDD = 1.8 V between 2 µA and 6 µA",
+    "hints": [
+      "With K = 1 only zero current exists. What makes K larger than 1?",
+      "Widen xm2 to 3 (K = 3)."
+    ]
+  },
+  "line": {
+    "label": "Supply sensitivity below 30 %/V",
+    "hints": []
+  }
+}

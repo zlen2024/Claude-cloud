@@ -1,0 +1,13 @@
+{
+  "oscillates": {
+    "label": "Full oscillation (more than 10 cycles after 5 ns, swing > 1.6 V)",
+    "hints": []
+  },
+  "freq": {
+    "label": "Frequency between 2 GHz and 3.5 GHz",
+    "hints": [
+      "f ~ 1/(2 N tpd). The 3-stage frequency is too high, so N must increase.",
+      "Use 5 stages: add two inverters and close the loop n5 -> n1."
+    ]
+  }
+}
