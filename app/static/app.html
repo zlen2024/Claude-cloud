@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ms"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OrderFlow — Dashboard</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<div class="shell">
+  <nav class="side">
+    <h2 class="grad">OrderFlow</h2>
+    <a href="#/admin">Admin Dashboard</a><a href="#/orders">Orders</a><a href="#/staff">Staff Queue</a>
+    <a href="#/customers">Customers / CRM</a><a href="#/blast">Customer Blast</a><a href="#/notifications">Notifications</a>
+    <a href="/">Public Tracking ↗</a>
+    <div style="margin:22px 8px 0"><div class="mute" style="font-size:12px;margin-bottom:6px">Login sebagai (demo)</div><select id="who"></select></div>
+  </nav>
+  <main id="view"></main>
+</div>
+<div class="modal" id="modal"><div class="card" id="mbody"></div></div>
+<script src="/static/gsap.min.js"></script>
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const api=async(p,o={})=>{const r=await fetch("/api"+p,{headers:{"Content-Type":"application/json"},...o,body:o.body&&JSON.stringify(o.body)});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail?JSON.stringify(e.detail):r.statusText)}return r.json()};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=d=>d?new Date(d).toLocaleString("ms-MY",{dateStyle:"medium",timeStyle:"short"}):"—";
+const rm=n=>"RM "+Number(n).toLocaleString("en-MY",{minimumFractionDigits:0});
+const statusPill=o=>`<span class="pill ${o.status==="completed"?"ok":"acc"}">${esc(o.status_label)}</span>`;
+const DEPTS=["design","production","delivery"];
+const stateLabel={pending:"Pending",in_progress:"In progress",done:"Done"};
+let staff=[],me=null;
+
+function anim(root){
+  gsap.from($$(".card,.kpi",root),{y:24,opacity:0,stagger:.06,duration:.55,ease:"power3.out",clearProps:"all"});
+  $$(".bar i",root).forEach(b=>gsap.to(b,{width:b.dataset.w+"%",duration:1,ease:"power2.out",delay:.2}));
+  $$("[data-count]",root).forEach(el=>{const o={v:0},t=+el.dataset.count,money=el.dataset.money;
+    gsap.to(o,{v:t,duration:1.1,ease:"power1.out",onUpdate:()=>el.textContent=money?rm(o.v):Math.round(o.v)})});
+}
+function modal(html){const m=$("#modal");$("#mbody").innerHTML=html;m.classList.add("open");
+  gsap.fromTo("#mbody",{scale:.92,opacity:0},{scale:1,opacity:1,duration:.3,ease:"back.out(1.6)"});}
+const closeModal=()=>$("#modal").classList.remove("open");
+$("#modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+function toast(msg){const t=document.createElement("div");t.textContent=msg;
+  Object.assign(t.style,{position:"fixed",right:"20px",bottom:"20px",background:"#1c2236",border:"1px solid #34d399",padding:"12px 16px",borderRadius:"12px",zIndex:99});
+  document.body.append(t);gsap.from(t,{y:30,opacity:0,duration:.4});gsap.to(t,{opacity:0,delay:2.6,duration:.4,onComplete:()=>t.remove()})}
+
+/* ---------- views ---------- */
+const views={
+async admin(v){
+  const s=await api("/admin/stats"),max=Math.max(1,...s.by_status.map(x=>x.count));
+  v.innerHTML=`<div class="top"><h1>Admin Dashboard</h1><span class="mute">Live dari database</span></div>
+  <div class="kpis">
+    <div class="card kpi"><span class="mute">Active orders</span><b data-count="${s.active_orders}">0</b></div>
+    <div class="card kpi"><span class="mute">Overdue</span><b style="color:var(--bad)" data-count="${s.overdue}">0</b></div>
+    <div class="card kpi"><span class="mute">Revenue</span><b data-count="${s.revenue}" data-money="1">0</b></div>
+    <div class="card kpi"><span class="mute">Customers</span><b data-count="${s.customers}">0</b></div></div>
+  <div class="grid2"><div class="card"><h3 style="margin-top:0">Orders ikut status</h3>
+    ${s.by_status.map(x=>`<div class="row" style="margin-top:10px"><span style="flex:none;width:150px">${x.label}</span><div class="bar" style="flex:1"><i data-w="${x.count/max*100}"></i></div><b style="flex:none">${x.count}</b></div>`).join("")}</div>
+    <div class="card"><h3 style="margin-top:0">Prestasi department</h3>
+    ${DEPTS.map(d=>{const x=s.departments[d],t=x.pending+x.in_progress+x.done||1;return `<div style="margin-top:12px"><div class="row"><b style="text-transform:capitalize">${d}</b>
+      <span class="mute" style="text-align:right">${x.done}/${t} siap · ${x.in_progress} jalan · ${x.pending} pending</span></div><div class="bar"><i data-w="${x.done/t*100}"></i></div></div>`}).join("")}</div></div>`;
+},
+async orders(v){
+  const list=await api("/orders");
+  v.innerHTML=`<div class="top"><h1>Orders</h1><div class="row" style="flex:none"><input id="q" placeholder="Cari kod / nama / tajuk" style="width:240px"><button id="new">+ Order baru</button></div></div>
+  <div class="card"><table><thead><tr><th>ID</th><th>Order</th><th>Customer</th><th>Status</th><th>Due</th><th>Amount</th></tr></thead><tbody id="tb"></tbody></table></div>`;
+  const draw=()=>{const q=$("#q").value.toLowerCase();$("#tb").innerHTML=list.filter(o=>(o.code+o.title+o.customer.name).toLowerCase().includes(q)).map(o=>
+    `<tr style="cursor:pointer" data-id="${o.id}"><td><b>${o.code}</b></td><td>${esc(o.title)}</td><td>${esc(o.customer.name)}</td><td>${statusPill(o)}</td><td>${o.due_date||"—"}</td><td>${rm(o.amount)}</td></tr>`).join("");
+    $$("#tb tr").forEach(r=>r.onclick=()=>orderModal(+r.dataset.id));gsap.from("#tb tr",{opacity:0,y:10,stagger:.03,duration:.3})};
+  $("#q").oninput=draw;draw();$("#new").onclick=newOrder;
+},
+async staff(v){
+  const dept=me?.department==="admin"?"":me?.department||"",all=await api("/orders"+(dept?"?department="+dept:""));
+  v.innerHTML=`<div class="top"><h1>Staff Queue ${dept?`<span class="pill acc">${dept}</span>`:""}</h1><span class="mute">Update progress kerja department anda</span></div><div id="q"></div>`;
+  $("#q").innerHTML=all.filter(o=>o.status!=="completed").map(o=>`<div class="card" style="margin-bottom:12px"><div class="row"><div><b>${o.code}</b> · ${esc(o.title)}<div class="mute">${esc(o.customer.name)} · due ${o.due_date||"—"}</div></div>${statusPill(o)}</div>
+    <div class="row" style="margin-top:12px">${o.tasks.filter(t=>!dept||t.department===dept).map(t=>`<div class="card" style="padding:12px;background:#0e121c"><div style="text-transform:capitalize"><b>${t.department}</b> <span class="pill ${t.state==="done"?"ok":t.state==="in_progress"?"warn":""}">${stateLabel[t.state]}</span></div>
+      <div class="row" style="margin-top:8px"><input placeholder="Nota (optional)" data-note="${o.id}-${t.department}">
+      ${t.state==="pending"?`<button class="sm" data-act="${o.id}|${t.department}|in_progress">Mula</button>`:""}${t.state!=="done"?`<button class="sm" data-act="${o.id}|${t.department}|done">Siap ✓</button>`:""}</div></div>`).join("")}</div></div>`).join("")||`<div class="card mute">Tiada kerja tertunggak 🎉</div>`;
+  $$("[data-act]").forEach(b=>b.onclick=async()=>{const [id,d,state]=b.dataset.act.split("|");
+    const r=await api(`/orders/${id}/tasks/${d}`,{method:"PATCH",body:{state,by:me?.name||"staff",note:$(`[data-note="${id}-${d}"]`).value}});
+    toast(`${r.code} → ${r.status_label}${r.notifications_sent?` · ${r.notifications_sent} notifikasi dihantar`:""}`);render()});
+},
+async customers(v){
+  const list=await api("/customers"),segs=["","new","repeat","vip"];
+  v.innerHTML=`<div class="top"><h1>Customers / CRM</h1><div class="row" style="flex:none"><select id="seg" style="width:140px">${segs.map(s=>`<option value="${s}">${s||"Semua"}</option>`).join("")}</select><input id="q" placeholder="Cari" style="width:200px"><button id="new">+ Customer</button></div></div>
+  <div class="card"><table><thead><tr><th>Nama</th><th>Hubungi</th><th>Segment</th><th>Orders</th><th>Jumlah</th><th>Consent</th></tr></thead><tbody id="tb"></tbody></table></div>`;
+  const draw=()=>{const q=$("#q").value.toLowerCase(),sg=$("#seg").value;$("#tb").innerHTML=list.filter(c=>(!sg||c.segment===sg)&&(c.name+c.phone+c.email).toLowerCase().includes(q)).map(c=>
+    `<tr style="cursor:pointer" data-id="${c.id}"><td><b>${esc(c.name)}</b><div>${c.tags.map(t=>`<span class="pill">${esc(t)}</span>`).join("")}</div></td><td>${esc(c.phone)}<div class="mute">${esc(c.email)}</div></td>
+     <td><span class="pill ${c.segment==="vip"?"warn":c.segment==="repeat"?"ok":""}">${c.segment}</span></td><td>${c.order_count}</td><td>${rm(c.total_spent)}</td>
+     <td>${Object.entries(c.consent).filter(e=>e[1]).map(e=>`<span class="pill ok">${e[0]}</span>`).join("")||`<span class="pill bad">tiada</span>`}</td></tr>`).join("");
+    $$("#tb tr").forEach(r=>r.onclick=()=>customerModal(+r.dataset.id))};
+  $("#q").oninput=draw;$("#seg").onchange=draw;draw();$("#new").onclick=()=>customerForm();
+},
+async blast(v){
+  const camps=await api("/campaigns");
+  v.innerHTML=`<div class="top"><h1>Customer Blast</h1><span class="mute">Hanya customer yang bagi consent</span></div>
+  <div class="grid2"><div class="card form"><label>Nama campaign</label><input id="n" placeholder="Promo Raya">
+    <div class="row"><div><label>Channel</label><select id="ch"><option>whatsapp</option><option>email</option><option>sms</option></select></div>
+    <div><label>Target</label><select id="tag"><option value="">Semua</option><option>new</option><option>repeat</option><option>vip</option></select></div></div>
+    <label>Mesej (guna {name})</label><textarea id="m" rows="4">Hi {name}, ada promo istimewa untuk anda bulan ni!</textarea>
+    <div class="mute" id="pv"></div><button id="go">Hantar blast</button></div>
+  <div class="card"><h3 style="margin-top:0">Campaign lepas</h3>${camps.map(c=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><b>${esc(c.name)}</b> <span class="pill acc">${c.channel}</span><div class="mute">${c.sent} dihantar · ${c.skipped} skip (tiada consent) · ${fmt(c.created_at)}</div></div>`).join("")||`<span class="mute">Belum ada.</span>`}</div></div>`;
+  const pv=async()=>{const r=await api(`/campaigns/preview?channel=${$("#ch").value}&tag=${$("#tag").value}`);$("#pv").textContent=`${r.eligible} akan terima · ${r.skipped_no_consent} di-skip (tiada consent)`};
+  $("#ch").onchange=$("#tag").onchange=pv;pv();
+  $("#go").onclick=async()=>{if(!$("#n").value)return toast("Isi nama campaign");const r=await api("/campaigns",{method:"POST",body:{name:$("#n").value,channel:$("#ch").value,tag:$("#tag").value,message:$("#m").value}});toast(`${r.sent} mesej dihantar`);render()};
+},
+async notifications(v){
+  const l=await api("/notifications");
+  v.innerHTML=`<div class="top"><h1>Notifications</h1><span class="mute">Prototype: mesej direkod sahaja (gateway belum disambung)</span></div><div class="card"><table><thead><tr><th>Bila</th><th>Customer</th><th>Channel</th><th>Jenis</th><th>Mesej</th></tr></thead><tbody>
+  ${l.map(n=>`<tr><td>${fmt(n.created_at)}</td><td>${esc(n.customer)}</td><td><span class="pill acc">${n.channel}</span></td><td>${n.kind}</td><td>${esc(n.message)}</td></tr>`).join("")}</tbody></table></div>`;
+}};
+
+/* ---------- modals ---------- */
+async function orderModal(id){
+  const o=await api("/orders/"+id);
+  modal(`<div class="row"><h2 style="margin:0">${o.code}</h2>${statusPill(o)}</div><p>${esc(o.title)}<br><span class="mute">${esc(o.customer.name)} · ${rm(o.amount)} · due ${o.due_date||"—"}</span></p>
+   <p class="mute">${esc(o.details)}</p><h4>Timeline</h4>${o.logs.map(l=>`<div class="mute">• ${fmt(l.at)} — <b style="color:var(--text)">${l.label}</b> (${esc(l.by)})</div>`).join("")}
+   <div class="row" style="margin-top:16px"><a href="/?id=${o.code}" target="_blank"><button class="ghost">Buka link tracking</button></a><button class="ghost" onclick="closeModal()">Tutup</button></div>`);
+}
+async function customerModal(id){
+  const c=await api("/customers/"+id);
+  modal(`<div class="row"><h2 style="margin:0">${esc(c.name)}</h2><span class="pill acc">${c.segment}</span></div><p class="mute">${esc(c.phone)} · ${esc(c.email)}<br>${c.order_count} order · ${rm(c.total_spent)}</p>
+   <p>${esc(c.notes)}</p><h4>Sejarah pembelian</h4>${c.orders.map(o=>`<div class="mute">• ${o.code} — ${esc(o.title)} — ${rm(o.amount)} ${statusPill(o)}</div>`).join("")||"—"}
+   <div class="row" style="margin-top:16px"><button class="ghost" id="ed">Edit</button><button class="ghost" onclick="closeModal()">Tutup</button></div>`);
+  $("#ed").onclick=()=>customerForm(c);
+}
+function customerForm(c={}){
+  modal(`<h2 style="margin-top:0">${c.id?"Edit":"Customer baru"}</h2><div class="form">
+   <input id="cn" placeholder="Nama" value="${esc(c.name)}"><div class="row"><input id="cp" placeholder="Telefon" value="${esc(c.phone)}"><input id="ce" placeholder="Email" value="${esc(c.email)}"></div>
+   <input id="ct" placeholder="Tags (pisah koma)" value="${esc((c.tags||[]).join(","))}"><textarea id="cno" placeholder="Nota">${esc(c.notes)}</textarea>
+   <div class="chk">${["whatsapp","email","sms"].map(k=>`<label><input type="checkbox" id="c_${k}" ${c.consent?.[k]?"checked":""}>${k}</label>`).join("")}</div>
+   <div class="mute" style="font-size:12px">Tick = customer setuju terima mesej di channel tu.</div>
+   <div class="row"><button id="sv">Simpan</button><button class="ghost" onclick="closeModal()">Batal</button></div></div>`);
+  $("#sv").onclick=async()=>{const body={name:$("#cn").value,phone:$("#cp").value,email:$("#ce").value,notes:$("#cno").value,
+    tags:$("#ct").value.split(",").map(s=>s.trim()).filter(Boolean),consent_whatsapp:$("#c_whatsapp").checked,consent_email:$("#c_email").checked,consent_sms:$("#c_sms").checked};
+    if(!body.name)return;await api("/customers"+(c.id?"/"+c.id:""),{method:c.id?"PATCH":"POST",body});closeModal();render()};
+}
+async function newOrder(){
+  const cs=await api("/customers");
+  modal(`<h2 style="margin-top:0">Order baru</h2><div class="form"><label>Customer</label>
+   <select id="oc">${cs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select>
+   <input id="ot" placeholder="Tajuk order"><textarea id="od" placeholder="Butiran"></textarea>
+   <div class="row"><input id="oa" type="number" placeholder="Amount (RM)"><input id="ou" type="date"></div>
+   <div class="row"><button id="sv">Cipta order</button><button class="ghost" onclick="closeModal()">Batal</button></div></div>`);
+  $("#sv").onclick=async()=>{if(!$("#ot").value)return;const o=await api("/orders",{method:"POST",body:{customer_id:+$("#oc").value,title:$("#ot").value,details:$("#od").value,amount:+$("#oa").value||0,due_date:$("#ou").value}});
+    closeModal();toast("Order "+o.code+" dicipta");render()};
+}
+
+/* ---------- router ---------- */
+async function render(){
+  const name=(location.hash.slice(2)||"admin"),v=$("#view");
+  $$("nav.side a").forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#/"+name));
+  try{await (views[name]||views.admin)(v);anim(v)}catch(e){v.innerHTML=`<div class="card">Error: ${esc(e.message)}</div>`}
+}
+window.onhashchange=render;
+(async()=>{staff=await api("/staff");const saved=localStorage.getItem("who");
+  $("#who").innerHTML=staff.map(s=>`<option value="${s.id}">${s.name} (${s.department})</option>`).join("");
+  if(saved)$("#who").value=saved;const pick=()=>{me=staff.find(s=>s.id==$("#who").value);localStorage.setItem("who",$("#who").value)};
+  $("#who").onchange=()=>{pick();render()};pick();
+  if(!location.hash)location.hash=me?.department==="admin"?"#/admin":"#/staff";else render();
+  gsap.from("nav.side a",{x:-20,opacity:0,stagger:.05,duration:.5});})();
+</script></body></html>

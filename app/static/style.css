@@ -1,0 +1,51 @@
+:root{--bg:#0b0d14;--panel:#141824;--panel2:#1b2030;--line:#262c40;--text:#e8ebf5;--mute:#8d96b3;
+--a:#7c5cff;--b:#22d3ee;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:radial-gradient(1200px 600px at 10% -10%,#1d1650 0,transparent 60%),radial-gradient(900px 500px at 100% 0,#0c3a4a 0,transparent 55%),var(--bg);
+color:var(--text);font:15px/1.5 Inter,system-ui,sans-serif;min-height:100vh}
+a{color:var(--b);text-decoration:none}
+.grad{background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:18px}
+input,select,textarea,button{font:inherit;color:var(--text)}
+input,select,textarea{background:#0e121c;border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--a)}
+button{cursor:pointer;border:0;border-radius:10px;padding:10px 16px;background:linear-gradient(90deg,var(--a),#5a8bff);font-weight:600}
+button.ghost{background:transparent;border:1px solid var(--line)}
+button.sm{padding:6px 10px;font-size:13px}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;background:#232a40;color:var(--mute);margin-right:4px}
+.pill.ok{background:#12372b;color:var(--ok)}.pill.warn{background:#3b2f10;color:var(--warn)}.pill.bad{background:#3d1b1b;color:var(--bad)}.pill.acc{background:#2a2160;color:#b7a6ff}
+.mute{color:var(--mute)}
+/* tracking page */
+.hero{max-width:720px;margin:0 auto;padding:12vh 20px 40px;text-align:center}
+.hero h1{font-size:clamp(34px,6vw,56px);margin:0 0 10px;line-height:1.1}
+.search{display:flex;gap:10px;margin:28px 0}.search input{font-size:18px;text-transform:uppercase}
+.result{max-width:720px;margin:0 auto 60px;padding:0 20px}
+.steps{list-style:none;margin:20px 0 0;padding:0;position:relative}
+.steps li{display:flex;gap:14px;align-items:center;padding:12px 0;position:relative}
+.steps li:not(:last-child)::after{content:"";position:absolute;left:13px;top:38px;bottom:-12px;width:2px;background:var(--line)}
+.dot{width:28px;height:28px;border-radius:50%;background:var(--panel2);border:2px solid var(--line);flex:none;display:grid;place-items:center;font-size:13px;z-index:1}
+.steps li.done .dot{background:var(--ok);border-color:var(--ok);color:#06231a}
+.steps li.now .dot{background:var(--a);border-color:var(--a);box-shadow:0 0 0 6px #7c5cff33}
+.steps li.todo{opacity:.45}
+/* app */
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+nav.side{padding:22px 14px;border-right:1px solid var(--line);position:sticky;top:0;height:100vh}
+nav.side h2{margin:0 8px 22px;font-size:20px}
+nav.side a{display:block;padding:10px 12px;border-radius:10px;color:var(--mute);margin-bottom:4px}
+nav.side a.on,nav.side a:hover{background:#1c2236;color:var(--text)}
+main{padding:26px 30px 60px;max-width:1200px;width:100%}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.top h1{margin:0;font-size:26px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+.kpi b{display:block;font-size:30px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:500;font-size:13px}
+.bar{height:10px;border-radius:6px;background:#0e121c;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b))}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row>button{flex:none}
+.form{display:grid;gap:10px}.form label{font-size:13px;color:var(--mute)}
+.modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;padding:20px;z-index:9}
+.modal.open{display:grid}.modal .card{width:min(560px,100%);max-height:90vh;overflow:auto}
+.chk{display:flex;gap:14px;font-size:14px}.chk label{display:flex;gap:6px;align-items:center;color:var(--text)}.chk input{width:auto}
+@media(max-width:800px){.shell{grid-template-columns:1fr}nav.side{position:static;height:auto;display:flex;flex-wrap:wrap;gap:4px;border:0}
+nav.side h2{width:100%}.grid2{grid-template-columns:1fr}main{padding:18px 14px}}
