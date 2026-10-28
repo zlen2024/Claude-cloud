@@ -2,7 +2,7 @@
 
 Sistem berpusat (All-in-One) untuk order management: tempahan, progress department, tracking customer, CRM, blast dan notifikasi automatik.
 
-**Stack:** FastAPI · SQLite (SQLAlchemy) · vanilla JS + GSAP (vendored, tiada build step)
+**Stack:** FastAPI · SQLite (SQLAlchemy) · vanilla JS + GSAP (vendored, tiada build step), UI mengikut tema OpenKuasa
 
 ## Jalankan
 ```bash

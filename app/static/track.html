@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ms"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Semak Tempahan — OrderFlow</title><link rel="stylesheet" href="/static/style.css"></head>
-<body>
+<title>Semak Tempahan — OrderFlow</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/style.css"></head>
+<body data-product="command" style="background:radial-gradient(900px 400px at 50% -10%,var(--pc-soft),transparent 70%),var(--background)">
 <section class="hero">
-  <div class="pill acc" id="badge">OrderFlow</div>
+  <div class="logo" style="margin:0 auto">O</div>
   <h1>Jejak <span class="grad">tempahan</span> anda</h1>
   <p class="mute" id="sub">Masukkan Order ID untuk lihat status dan progress terkini.</p>
   <form class="search" id="f"><input id="code" placeholder="ORD-2026-0001" autocomplete="off" required><button>Semak</button></form>
@@ -14,7 +14,6 @@
 <script>
 const $=s=>document.querySelector(s);
 gsap.from(".hero > *",{y:30,opacity:0,stagger:.12,duration:.8,ease:"power3.out"});
-gsap.to("body",{backgroundPosition:"20% 10%",duration:12,repeat:-1,yoyo:true,ease:"sine.inOut"});
 const fmt=d=>new Date(d).toLocaleString("ms-MY",{dateStyle:"medium",timeStyle:"short"});
 async function track(code){
   const res=$("#res"),r=await fetch("/api/track/"+encodeURIComponent(code));
@@ -25,7 +24,7 @@ async function track(code){
   res.innerHTML=`<div class="row"><div><div class="mute">Order ${d.code}</div><h2 style="margin:2px 0">${d.title}</h2>
     <div class="mute">Hi ${d.customer}${d.due_date?` · Anggaran siap ${d.due_date}`:""}</div></div>
     <span class="pill ${d.status==="completed"?"ok":"acc"}" style="flex:none">${d.status_label}</span></div>
-    <div class="bar"><i id="pb"></i></div>
+    <div class="bar thin" style="margin-top:14px"><i id="pb"></i></div>
     <ul class="steps">${d.steps.map((s,i)=>`<li class="${i<idx||d.status==="completed"?"done":i===idx?"now":"todo"}"><span class="dot">${i<idx||d.status==="completed"?"✓":i+1}</span>
       <div><b>${s.label}</b>${at[s.key]?`<div class="mute" style="font-size:12px">${fmt(at[s.key])}</div>`:""}</div></li>`).join("")}</ul>`;
   gsap.fromTo(res,{y:30,opacity:0},{y:0,opacity:1,duration:.6,ease:"power3.out"});

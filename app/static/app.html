@@ -1,16 +1,21 @@
 <!doctype html>
 <html lang="ms"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OrderFlow — Dashboard</title><link rel="stylesheet" href="/static/style.css"></head>
+<title>OrderFlow — Dashboard</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/style.css"></head>
 <body>
-<div class="shell">
-  <nav class="side">
-    <h2 class="grad">OrderFlow</h2>
-    <a href="#/admin">Admin Dashboard</a><a href="#/orders">Orders</a><a href="#/staff">Staff Queue</a>
-    <a href="#/customers">Customers / CRM</a><a href="#/blast">Customer Blast</a><a href="#/notifications">Notifications</a>
-    <a href="/">Public Tracking ↗</a>
-    <div style="margin:22px 8px 0"><div class="mute" style="font-size:12px;margin-bottom:6px">Login sebagai (demo)</div><select id="who"></select></div>
-  </nav>
-  <main id="view"></main>
+<div class="shell" id="shell" data-product="command">
+  <div class="rail">
+    <div class="logo">O</div>
+    <a href="#/admin" data-g="command" title="Operations"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></a>
+    <a href="#/customers" data-g="crm" title="Customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg></a>
+    <a href="#/blast" data-g="reach" title="Engage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></a>
+    <div style="margin-top:auto;display:grid;gap:6px"><button class="rb" id="theme" title="Tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></button><a href="/" title="Public tracking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></a></div>
+  </div>
+  <nav class="side" id="side"></nav>
+  <div class="content">
+    <div class="topbar"><div class="sr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="gs" placeholder="Cari order atau customer…"></div>
+      <div class="who"><span class="mute" style="font-size:12px">Login (demo)</span><select id="who"></select><div class="av" id="av">A</div></div></div>
+    <main id="view"></main>
+  </div>
 </div>
 <div class="modal" id="modal"><div class="card" id="mbody"></div></div>
 <script src="/static/gsap.min.js"></script>
@@ -25,6 +30,12 @@ const statusPill=o=>`<span class="pill ${o.status==="completed"?"ok":"acc"}">${e
 const DEPTS=["design","production","delivery"];
 const stateLabel={pending:"Pending",in_progress:"In progress",done:"Done"};
 let staff=[],me=null;
+const IC={"box": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 8 12 3 3 8v8l9 5 9-5z\"/><path d=\"m3 8 9 5 9-5M12 13v8\"/></svg>", "users": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8\"/></svg>", "mega": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m3 11 18-5v12L3 14z\"/><path d=\"M11.6 16.8a3 3 0 1 1-5.8-1.6\"/></svg>", "moon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z\"/></svg>", "globe": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20\"/></svg>", "search": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg>", "grid": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1\"/></svg>", "list": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"8\" y=\"2\" width=\"8\" height=\"4\" rx=\"1\"/><path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 12h6M9 16h6\"/></svg>", "check": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 11l3 3L22 4\"/><path d=\"M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11\"/></svg>", "bell": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0\"/></svg>", "trend": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m22 7-8.5 8.5-5-5L2 17\"/><path d=\"M16 7h6v6\"/></svg>", "pie": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 12a9 9 0 1 1-9-9v9z\"/><path d=\"M12 3a9 9 0 0 1 9 9h-9\"/></svg>", "clock": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/></svg>"};
+const chip=(i,t,sub='')=>`<div class="card-h"><div class="chip">${IC[i]}</div><div><b>${t}</b>${sub?`<span>${sub}</span>`:''}</div></div>`;
+const spark=()=>{const pts=Array.from({length:12},(_,i)=>[i*30,28-Math.round((Math.sin(i*.9)+1)*7+i*.9)]);return `<svg class="sp" viewBox="0 0 330 36" preserveAspectRatio="none"><path d="M${pts.map(p=>p.join(',')).join(' L')}" fill="none" stroke="currentColor" stroke-width="2" opacity=".7"/></svg>`};
+const NAV={command:[['Overview',[['admin','Admin Dashboard','grid']]],['Operations',[['orders','Orders','box'],['staff','Staff Queue','check']]]],crm:[['Customers',[['customers','Customers / CRM','users']]]],reach:[['Engage',[['blast','Customer Blast','mega'],['notifications','Notifications','bell']]]]};
+const PRODUCT={admin:'command',orders:'command',staff:'command',customers:'crm',blast:'reach',notifications:'reach'};
+const PNAME={command:['Operations','Orders, production &amp; tracking'],crm:['Customers','CRM &amp; repeat orders'],reach:['Reach','Blast &amp; notifications']};
 
 function anim(root){
   gsap.from($$(".card,.kpi",root),{y:24,opacity:0,stagger:.06,duration:.55,ease:"power3.out",clearProps:"all"});
@@ -37,28 +48,29 @@ function modal(html){const m=$("#modal");$("#mbody").innerHTML=html;m.classList.
 const closeModal=()=>$("#modal").classList.remove("open");
 $("#modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
 function toast(msg){const t=document.createElement("div");t.textContent=msg;
-  Object.assign(t.style,{position:"fixed",right:"20px",bottom:"20px",background:"#1c2236",border:"1px solid #34d399",padding:"12px 16px",borderRadius:"12px",zIndex:99});
+  Object.assign(t.style,{position:"fixed",right:"20px",bottom:"20px",background:"var(--card)",border:"1px solid var(--pc)",boxShadow:"0 8px 24px #0002",color:"var(--foreground)",padding:"12px 16px",borderRadius:"12px",zIndex:99});
   document.body.append(t);gsap.from(t,{y:30,opacity:0,duration:.4});gsap.to(t,{opacity:0,delay:2.6,duration:.4,onComplete:()=>t.remove()})}
 
 /* ---------- views ---------- */
 const views={
 async admin(v){
   const s=await api("/admin/stats"),max=Math.max(1,...s.by_status.map(x=>x.count));
-  v.innerHTML=`<div class="top"><h1>Admin Dashboard</h1><span class="mute">Live dari database</span></div>
+  v.innerHTML=`<div class="hero-ask"><small>OrderFlow · ringkasan hari ini</small><h2>Hai ${esc(me?.name||"")}, ${s.active_orders} order sedang berjalan${s.overdue?` dan ${s.overdue} lewat`:""}.</h2>
+    <a href="#/staff">Kerja department</a><a href="#/orders">Semua order</a><a href="#/blast">Hantar promo</a></div>
   <div class="kpis">
-    <div class="card kpi"><span class="mute">Active orders</span><b data-count="${s.active_orders}">0</b></div>
-    <div class="card kpi"><span class="mute">Overdue</span><b style="color:var(--bad)" data-count="${s.overdue}">0</b></div>
-    <div class="card kpi"><span class="mute">Revenue</span><b data-count="${s.revenue}" data-money="1">0</b></div>
-    <div class="card kpi"><span class="mute">Customers</span><b data-count="${s.customers}">0</b></div></div>
-  <div class="grid2"><div class="card"><h3 style="margin-top:0">Orders ikut status</h3>
-    ${s.by_status.map(x=>`<div class="row" style="margin-top:10px"><span style="flex:none;width:150px">${x.label}</span><div class="bar" style="flex:1"><i data-w="${x.count/max*100}"></i></div><b style="flex:none">${x.count}</b></div>`).join("")}</div>
-    <div class="card"><h3 style="margin-top:0">Prestasi department</h3>
+    <div class="card kpi"><span class="l">Active orders</span><b data-count="${s.active_orders}">0</b>${spark()}</div>
+    <div class="card kpi"><span class="l">Overdue</span><b style="color:var(--destructive)" data-count="${s.overdue}">0</b>${spark()}</div>
+    <div class="card kpi"><span class="l">Revenue</span><b data-count="${s.revenue}" data-money="1">0</b>${spark()}</div>
+    <div class="card kpi"><span class="l">Customers</span><b data-count="${s.customers}">0</b>${spark()}</div></div>
+  <div class="grid2"><div class="card">${chip("pie","Orders ikut status","Pipeline semasa")}
+    ${s.by_status.map(x=>`<div class="row" style="margin-top:10px"><span style="flex:none;width:150px;font-size:13px;color:var(--muted-fg)">${x.label}</span><div class="bar" style="flex:1"><i data-w="${x.count/max*100}"></i></div><b style="flex:none;width:20px;text-align:right">${x.count}</b></div>`).join("")}</div>
+    <div class="card">${chip("trend","Prestasi department","Siap vs tertunggak")}
     ${DEPTS.map(d=>{const x=s.departments[d],t=x.pending+x.in_progress+x.done||1;return `<div style="margin-top:12px"><div class="row"><b style="text-transform:capitalize">${d}</b>
-      <span class="mute" style="text-align:right">${x.done}/${t} siap · ${x.in_progress} jalan · ${x.pending} pending</span></div><div class="bar"><i data-w="${x.done/t*100}"></i></div></div>`}).join("")}</div></div>`;
+      <span class="mute" style="text-align:right">${x.done}/${t} siap · ${x.in_progress} jalan · ${x.pending} pending</span></div><div class="bar thin" style="margin-top:6px"><i data-w="${x.done/t*100}"></i></div></div>`}).join("")}</div></div>`;
 },
 async orders(v){
   const list=await api("/orders");
-  v.innerHTML=`<div class="top"><h1>Orders</h1><div class="row" style="flex:none"><input id="q" placeholder="Cari kod / nama / tajuk" style="width:240px"><button id="new">+ Order baru</button></div></div>
+  v.innerHTML=`<div class="top"><div><h1>Orders</h1><div class="mute">Semua tempahan dalam satu sistem</div></div><div class="row" style="flex:none"><input id="q" value="${esc(sessionStorage.getItem("gq")||"")}" placeholder="Cari kod / nama / tajuk" style="width:240px"><button id="new">+ Order baru</button></div></div>
   <div class="card"><table><thead><tr><th>ID</th><th>Order</th><th>Customer</th><th>Status</th><th>Due</th><th>Amount</th></tr></thead><tbody id="tb"></tbody></table></div>`;
   const draw=()=>{const q=$("#q").value.toLowerCase();$("#tb").innerHTML=list.filter(o=>(o.code+o.title+o.customer.name).toLowerCase().includes(q)).map(o=>
     `<tr style="cursor:pointer" data-id="${o.id}"><td><b>${o.code}</b></td><td>${esc(o.title)}</td><td>${esc(o.customer.name)}</td><td>${statusPill(o)}</td><td>${o.due_date||"—"}</td><td>${rm(o.amount)}</td></tr>`).join("");
@@ -67,9 +79,9 @@ async orders(v){
 },
 async staff(v){
   const dept=me?.department==="admin"?"":me?.department||"",all=await api("/orders"+(dept?"?department="+dept:""));
-  v.innerHTML=`<div class="top"><h1>Staff Queue ${dept?`<span class="pill acc">${dept}</span>`:""}</h1><span class="mute">Update progress kerja department anda</span></div><div id="q"></div>`;
+  v.innerHTML=`<div class="top"><div><h1>Staff Queue ${dept?`<span class="pill acc">${dept}</span>`:""}</h1><div class="mute">Update progress kerja department anda</div></div></div><div id="q"></div>`;
   $("#q").innerHTML=all.filter(o=>o.status!=="completed").map(o=>`<div class="card" style="margin-bottom:12px"><div class="row"><div><b>${o.code}</b> · ${esc(o.title)}<div class="mute">${esc(o.customer.name)} · due ${o.due_date||"—"}</div></div>${statusPill(o)}</div>
-    <div class="row" style="margin-top:12px">${o.tasks.filter(t=>!dept||t.department===dept).map(t=>`<div class="card" style="padding:12px;background:#0e121c"><div style="text-transform:capitalize"><b>${t.department}</b> <span class="pill ${t.state==="done"?"ok":t.state==="in_progress"?"warn":""}">${stateLabel[t.state]}</span></div>
+    <div class="row" style="margin-top:12px">${o.tasks.filter(t=>!dept||t.department===dept).map(t=>`<div class="subcard"><div style="text-transform:capitalize"><b>${t.department}</b> <span class="pill ${t.state==="done"?"ok":t.state==="in_progress"?"warn":""}">${stateLabel[t.state]}</span></div>
       <div class="row" style="margin-top:8px"><input placeholder="Nota (optional)" data-note="${o.id}-${t.department}">
       ${t.state==="pending"?`<button class="sm" data-act="${o.id}|${t.department}|in_progress">Mula</button>`:""}${t.state!=="done"?`<button class="sm" data-act="${o.id}|${t.department}|done">Siap ✓</button>`:""}</div></div>`).join("")}</div></div>`).join("")||`<div class="card mute">Tiada kerja tertunggak 🎉</div>`;
   $$("[data-act]").forEach(b=>b.onclick=async()=>{const [id,d,state]=b.dataset.act.split("|");
@@ -78,7 +90,7 @@ async staff(v){
 },
 async customers(v){
   const list=await api("/customers"),segs=["","new","repeat","vip"];
-  v.innerHTML=`<div class="top"><h1>Customers / CRM</h1><div class="row" style="flex:none"><select id="seg" style="width:140px">${segs.map(s=>`<option value="${s}">${s||"Semua"}</option>`).join("")}</select><input id="q" placeholder="Cari" style="width:200px"><button id="new">+ Customer</button></div></div>
+  v.innerHTML=`<div class="top"><div><h1>Customers / CRM</h1><div class="mute">Rekod, segment dan sejarah pembelian</div></div><div class="row" style="flex:none"><select id="seg" style="width:140px">${segs.map(s=>`<option value="${s}">${s||"Semua"}</option>`).join("")}</select><input id="q" placeholder="Cari" style="width:200px"><button id="new">+ Customer</button></div></div>
   <div class="card"><table><thead><tr><th>Nama</th><th>Hubungi</th><th>Segment</th><th>Orders</th><th>Jumlah</th><th>Consent</th></tr></thead><tbody id="tb"></tbody></table></div>`;
   const draw=()=>{const q=$("#q").value.toLowerCase(),sg=$("#seg").value;$("#tb").innerHTML=list.filter(c=>(!sg||c.segment===sg)&&(c.name+c.phone+c.email).toLowerCase().includes(q)).map(c=>
     `<tr style="cursor:pointer" data-id="${c.id}"><td><b>${esc(c.name)}</b><div>${c.tags.map(t=>`<span class="pill">${esc(t)}</span>`).join("")}</div></td><td>${esc(c.phone)}<div class="mute">${esc(c.email)}</div></td>
@@ -89,20 +101,20 @@ async customers(v){
 },
 async blast(v){
   const camps=await api("/campaigns");
-  v.innerHTML=`<div class="top"><h1>Customer Blast</h1><span class="mute">Hanya customer yang bagi consent</span></div>
-  <div class="grid2"><div class="card form"><label>Nama campaign</label><input id="n" placeholder="Promo Raya">
+  v.innerHTML=`<div class="top"><div><h1>Customer Blast</h1><div class="mute">Promosi, pengumuman dan follow-up secara berpusat</div></div></div>
+  <div class="grid2"><div class="card form">${chip("mega","Campaign baru","Hanya customer yang consent")}<label>Nama campaign</label><input id="n" placeholder="Promo Raya">
     <div class="row"><div><label>Channel</label><select id="ch"><option>whatsapp</option><option>email</option><option>sms</option></select></div>
     <div><label>Target</label><select id="tag"><option value="">Semua</option><option>new</option><option>repeat</option><option>vip</option></select></div></div>
     <label>Mesej (guna {name})</label><textarea id="m" rows="4">Hi {name}, ada promo istimewa untuk anda bulan ni!</textarea>
     <div class="mute" id="pv"></div><button id="go">Hantar blast</button></div>
-  <div class="card"><h3 style="margin-top:0">Campaign lepas</h3>${camps.map(c=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><b>${esc(c.name)}</b> <span class="pill acc">${c.channel}</span><div class="mute">${c.sent} dihantar · ${c.skipped} skip (tiada consent) · ${fmt(c.created_at)}</div></div>`).join("")||`<span class="mute">Belum ada.</span>`}</div></div>`;
+  <div class="card">${chip("clock","Campaign lepas")}${camps.map(c=>`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><b>${esc(c.name)}</b> <span class="pill acc">${c.channel}</span><div class="mute">${c.sent} dihantar · ${c.skipped} skip (tiada consent) · ${fmt(c.created_at)}</div></div>`).join("")||`<span class="mute">Belum ada.</span>`}</div></div>`;
   const pv=async()=>{const r=await api(`/campaigns/preview?channel=${$("#ch").value}&tag=${$("#tag").value}`);$("#pv").textContent=`${r.eligible} akan terima · ${r.skipped_no_consent} di-skip (tiada consent)`};
   $("#ch").onchange=$("#tag").onchange=pv;pv();
   $("#go").onclick=async()=>{if(!$("#n").value)return toast("Isi nama campaign");const r=await api("/campaigns",{method:"POST",body:{name:$("#n").value,channel:$("#ch").value,tag:$("#tag").value,message:$("#m").value}});toast(`${r.sent} mesej dihantar`);render()};
 },
 async notifications(v){
   const l=await api("/notifications");
-  v.innerHTML=`<div class="top"><h1>Notifications</h1><span class="mute">Prototype: mesej direkod sahaja (gateway belum disambung)</span></div><div class="card"><table><thead><tr><th>Bila</th><th>Customer</th><th>Channel</th><th>Jenis</th><th>Mesej</th></tr></thead><tbody>
+  v.innerHTML=`<div class="top"><div><h1>Notifications</h1><div class="mute">Prototype: mesej direkod sahaja (gateway belum disambung)</div></div></div><div class="card"><table><thead><tr><th>Bila</th><th>Customer</th><th>Channel</th><th>Jenis</th><th>Mesej</th></tr></thead><tbody>
   ${l.map(n=>`<tr><td>${fmt(n.created_at)}</td><td>${esc(n.customer)}</td><td><span class="pill acc">${n.channel}</span></td><td>${n.kind}</td><td>${esc(n.message)}</td></tr>`).join("")}</tbody></table></div>`;
 }};
 
@@ -110,13 +122,13 @@ async notifications(v){
 async function orderModal(id){
   const o=await api("/orders/"+id);
   modal(`<div class="row"><h2 style="margin:0">${o.code}</h2>${statusPill(o)}</div><p>${esc(o.title)}<br><span class="mute">${esc(o.customer.name)} · ${rm(o.amount)} · due ${o.due_date||"—"}</span></p>
-   <p class="mute">${esc(o.details)}</p><h4>Timeline</h4>${o.logs.map(l=>`<div class="mute">• ${fmt(l.at)} — <b style="color:var(--text)">${l.label}</b> (${esc(l.by)})</div>`).join("")}
+   <p class="mute">${esc(o.details)}</p><h4 style="margin-bottom:6px">Timeline</h4>${o.logs.map(l=>`<div class="mute">• ${fmt(l.at)} — <b style="color:var(--foreground)">${l.label}</b> (${esc(l.by)})</div>`).join("")}
    <div class="row" style="margin-top:16px"><a href="/?id=${o.code}" target="_blank"><button class="ghost">Buka link tracking</button></a><button class="ghost" onclick="closeModal()">Tutup</button></div>`);
 }
 async function customerModal(id){
   const c=await api("/customers/"+id);
   modal(`<div class="row"><h2 style="margin:0">${esc(c.name)}</h2><span class="pill acc">${c.segment}</span></div><p class="mute">${esc(c.phone)} · ${esc(c.email)}<br>${c.order_count} order · ${rm(c.total_spent)}</p>
-   <p>${esc(c.notes)}</p><h4>Sejarah pembelian</h4>${c.orders.map(o=>`<div class="mute">• ${o.code} — ${esc(o.title)} — ${rm(o.amount)} ${statusPill(o)}</div>`).join("")||"—"}
+   <p>${esc(c.notes)}</p><h4 style="margin-bottom:6px">Sejarah pembelian</h4>${c.orders.map(o=>`<div class="mute">• ${o.code} — ${esc(o.title)} — ${rm(o.amount)} ${statusPill(o)}</div>`).join("")||"—"}
    <div class="row" style="margin-top:16px"><button class="ghost" id="ed">Edit</button><button class="ghost" onclick="closeModal()">Tutup</button></div>`);
   $("#ed").onclick=()=>customerForm(c);
 }
@@ -145,14 +157,20 @@ async function newOrder(){
 /* ---------- router ---------- */
 async function render(){
   const name=(location.hash.slice(2)||"admin"),v=$("#view");
-  $$("nav.side a").forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#/"+name));
+  const prod=PRODUCT[name]||"command";$("#shell").dataset.product=prod;document.documentElement.dataset.product=prod;
+  $("#side").innerHTML=`<div class="t"><b>${PNAME[prod][0]}</b><span>${PNAME[prod][1]}</span></div>`+NAV[prod].map(([h,items])=>`<h6>${h}</h6>`+items.map(([r,l,i])=>`<a href="#/${r}" class="${r===name?"on":""}">${IC[i]}${l}</a>`).join("")).join("");
+  $$(".rail a[data-g]").forEach(a=>a.classList.toggle("on",a.dataset.g===prod));
   try{await (views[name]||views.admin)(v);anim(v)}catch(e){v.innerHTML=`<div class="card">Error: ${esc(e.message)}</div>`}
 }
 window.onhashchange=render;
 (async()=>{staff=await api("/staff");const saved=localStorage.getItem("who");
   $("#who").innerHTML=staff.map(s=>`<option value="${s.id}">${s.name} (${s.department})</option>`).join("");
-  if(saved)$("#who").value=saved;const pick=()=>{me=staff.find(s=>s.id==$("#who").value);localStorage.setItem("who",$("#who").value)};
+  if(saved)$("#who").value=saved;const pick=()=>{me=staff.find(s=>s.id==$("#who").value);$("#av").textContent=me?.name[0]||"?";localStorage.setItem("who",$("#who").value)};
   $("#who").onchange=()=>{pick();render()};pick();
   if(!location.hash)location.hash=me?.department==="admin"?"#/admin":"#/staff";else render();
-  gsap.from("nav.side a",{x:-20,opacity:0,stagger:.05,duration:.5});})();
+  gsap.from(".rail > *",{y:-12,opacity:0,stagger:.05,duration:.5});})();
+const setTheme=d=>{document.documentElement.classList.toggle("dark",d);$("#shell").classList.toggle("dark",d)};
+try{setTheme(localStorage.getItem("theme")==="dark")}catch(e){}
+$("#theme").onclick=()=>{const d=!document.documentElement.classList.contains("dark");setTheme(d);try{localStorage.setItem("theme",d?"dark":"light")}catch(e){}};
+$("#gs").onkeydown=e=>{if(e.key==="Enter"){sessionStorage.setItem("gq",e.target.value);location.hash==="#/orders"?render():location.hash="#/orders"}};
 </script></body></html>
