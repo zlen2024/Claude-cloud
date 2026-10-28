@@ -3,6 +3,7 @@ import { LESSONS, SCRATCH, MODULES } from "./lessons/index.js";
 import { runChecks } from "./checks.js";
 import { diffText } from "./diff.js";
 import { marked } from "marked";
+import { renderSchematic } from "./schematic/render.js";
 import { createEditor } from "./editor.js";
 import { lintNetlist, addSkyHeader } from "./lint.js";
 import { parseNgspiceErrors, PDK_MESSAGE } from "./errors.js";
@@ -18,7 +19,7 @@ const $ = (id) => document.getElementById(id);
 const els = {
   outline: $("outline"), lessonMd: $("lesson-md"), checksEl: $("checks"), check: $("check"), editorHost: $("editor"), hints: $("hints"), share: $("share"), run: $("run"), reset: $("reset"), stop: $("stop"),
   status: $("status"), legend: $("legend"), log: $("log"), plot: $("plot"), info: $("info"),
-  expr: $("expr"), exprAdd: $("expr-add"), curA: $("cur-a"), curB: $("cur-b"), csv: $("csv"), png: $("png"),
+  expr: $("expr"), exprAdd: $("expr-add"), curA: $("cur-a"), curB: $("cur-b"), csv: $("csv"), png: $("png"), tabPlot: $("tab-plot"), tabSchem: $("tab-schem"), schem: $("schem"), plotWrap: document.querySelector(".plotwrap"),
 };
 
 const plot = new Plot(els.plot);
@@ -55,7 +56,46 @@ const editor = createEditor(els.editorHost, {
   },
 });
 
+let view = "plot";
+
+function renderSchem() {
+  if (view !== "schem") return;
+  const r = renderSchematic(editor.getValue(), { layout: current.layout });
+  els.schem.innerHTML = r.svg || '<p class="desc">Tiada elemen untuk dilukis.</p>';
+  markSchemActive();
+}
+
+function markSchemActive() {
+  const on = new Set(items.filter((i) => i.on).map((i) => i.name.toLowerCase()));
+  for (const n of els.schem.querySelectorAll(".netlabel")) n.classList.toggle("on", on.has(`v(${n.dataset.net})`));
+}
+
+function setView(v) {
+  view = v;
+  els.schem.hidden = v !== "schem";
+  els.plotWrap.hidden = v !== "plot";
+  els.tabPlot.classList.toggle("on", v === "plot");
+  els.tabSchem.classList.toggle("on", v === "schem");
+  els.tabPlot.setAttribute("aria-selected", String(v === "plot"));
+  els.tabSchem.setAttribute("aria-selected", String(v === "schem"));
+  if (v === "plot") plot.draw();
+  renderSchem();
+}
+
+function toggleNet(net) {
+  const it = items.find((i) => i.name.toLowerCase() === `v(${net})`);
+  if (!it) {
+    setStatus(`Tiada isyarat v(${net}). Jalankan simulation dahulu.`, "err");
+    return;
+  }
+  it.on = !it.on;
+  renderLegend();
+  redraw();
+  markSchemActive();
+}
+
 function refreshLint() {
+  renderSchem();
   lintDiags = lintNetlist(editor.getValue());
   applyDiagnostics();
   renderHints();
@@ -117,6 +157,7 @@ function defaultOn(name, all) {
 }
 
 function renderLegend() {
+  queueMicrotask(markSchemActive);
   els.legend.innerHTML = "";
   for (const s of items) {
     const label = document.createElement("label");
@@ -444,6 +485,23 @@ els.share.addEventListener("click", async () => {
   } catch {
     setStatus("Pautan kongsi ada dalam bar alamat", "ok");
   }
+});
+els.tabPlot.addEventListener("click", () => setView("plot"));
+els.tabSchem.addEventListener("click", () => setView("schem"));
+els.schem.addEventListener("click", (e) => {
+  const n = e.target.closest?.(".netlabel");
+  if (n) toggleNet(n.dataset.net);
+});
+els.schem.addEventListener("keydown", (e) => {
+  const n = e.target.closest?.(".netlabel");
+  if (n && (e.key === "Enter" || e.key === " ")) {
+    e.preventDefault();
+    toggleNet(n.dataset.net);
+  }
+});
+els.schem.addEventListener("mouseover", (e) => {
+  const net = e.target.closest?.(".netlabel")?.dataset.net;
+  for (const n of els.schem.querySelectorAll(".netlabel")) n.classList.toggle("hl", !!net && n.dataset.net === net);
 });
 els.check.addEventListener("click", check);
 els.run.addEventListener("click", run);

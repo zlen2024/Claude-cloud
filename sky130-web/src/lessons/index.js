@@ -5,6 +5,7 @@ const md = import.meta.glob("./*/lesson.md", { query: "?raw", import: "default",
 const cir = import.meta.glob("./*/circuit.cir", { query: "?raw", import: "default", eager: true });
 const sol = import.meta.glob("./*/solution.cir", { query: "?raw", import: "default", eager: true });
 const chk = import.meta.glob("./*/checks.js", { eager: true });
+const lay = import.meta.glob("./*/layout.json", { import: "default", eager: true });
 
 export const MODULES = {
   A: "MOSFET",
@@ -32,6 +33,7 @@ export const LESSONS = Object.keys(md)
       netlist: cir[`./${dir}/circuit.cir`],
       solution: sol[`./${dir}/solution.cir`] ?? null,
       checks: chk[`./${dir}/checks.js`]?.checks ?? [],
+      layout: lay[`./${dir}/layout.json`] ?? {},
     };
   })
   .sort((a, b) => a.module.localeCompare(b.module) || a.order - b.order);
@@ -53,4 +55,5 @@ vg g 0 0
 `,
   solution: null,
   checks: [],
+  layout: {},
 };

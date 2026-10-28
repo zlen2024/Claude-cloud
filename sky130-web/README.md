@@ -39,6 +39,13 @@ Cipta folder `src/lessons/<id>/` dengan:
 Lesson dipungut automatik (`import.meta.glob`). `npm test` menjalankan setiap `circuit.cir` dan `solution.cir` melalui engine.
 Komen dalam `checks.js` mesti merekod nilai rujukan daripada simulation dan pengiraan tangan.
 
+## Skema (Phase 7a)
+
+Tab **Skema** melukis litar daripada netlist (R, C, L, V, I, E, MOSFET sebagai subcircuit `x...`). Susun atur automatik: lajur ikut aliran
+isyarat dari sumber. Mengikut konvensyen skema, pin pada VDD dan bumi dilukis sebagai simbol, dan nod lain sebagai label net (biru)
+yang boleh **diklik** untuk menogol `v(net)` dalam plot. Lesson boleh sertakan `layout.json` (`{"xm1": [lajur, baris]}`) untuk meletakkan
+elemen dengan tangan. Editor skema (7b) dijadualkan v1.1.
+
 ## Kurikulum
 
 | Modul | Lesson |

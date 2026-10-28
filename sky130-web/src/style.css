@@ -208,3 +208,24 @@ canvas { width: 100%; height: 100%; display: block; }
 }
 
 main section.col:first-of-type { overflow-y: auto; }
+
+.tabs { display: flex; gap: 6px; }
+.tabs button { padding: 3px 12px; }
+.tabs button.on { border-color: var(--accent); color: var(--accent); }
+.schemwrap {
+  flex: 1; min-height: 220px; overflow: auto; background: #0b0f15;
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+}
+.schemwrap[hidden] { display: none; }
+svg.schem { color: #c8d1e0; max-width: none; }
+svg.schem path, svg.schem rect, svg.schem circle { stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+svg.schem .bubble { fill: #0b0f15; }
+svg.schem .arrow { stroke-width: 1.2; }
+svg.schem text { fill: #8b93a1; font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+svg.schem text.name { fill: #e3e9f3; font-weight: 600; }
+svg.schem text.supply { fill: #ffb454; }
+svg.schem .vdd path { stroke: #ffb454; }
+svg.schem .netlabel { cursor: pointer; outline: none; }
+svg.schem .netlabel text { fill: #5aa9ff; }
+svg.schem .netlabel:hover text, svg.schem .netlabel:focus text, svg.schem .netlabel.hl text { fill: #fff; text-decoration: underline; }
+svg.schem .netlabel.on text { fill: #4ade80; font-weight: 700; }

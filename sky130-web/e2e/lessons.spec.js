@@ -49,3 +49,27 @@ test("lesson tanpa petunjuk berlebihan dan butang Semak disorok untuk Scratch", 
   await page.click('[data-lesson="scratch"]');
   await expect(page.locator("#check")).toBeHidden();
 });
+
+test("skema: tab Skema melukis litar dan klik net menogol isyarat dalam plot", async ({ page }) => {
+  await page.goto("/");
+  await page.click('[data-lesson="b1-inverter-vtc"]');
+  await page.click("#run");
+  await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
+  await page.click("#tab-schem");
+  await expect(page.locator("#schem svg.schem")).toBeVisible();
+  await expect(page.locator("#schem .el")).toHaveCount(4); // vdd, vin, xm1, xm2
+  const inLabel = page.locator('#schem .netlabel[data-net="in"]').first();
+  await expect(inLabel).toHaveClass(/on/);
+  await inLabel.click();
+  await expect(inLabel).not.toHaveClass(/on/);
+  await page.click("#tab-plot");
+  await expect(page.locator('#legend label:has-text("v(in)") input')).not.toBeChecked();
+  await page.screenshot({ path: "test-results/schem-toggle.png" });
+});
+
+test("skema dikemas kini bila netlist diedit", async ({ page }) => {
+  await page.goto("/");
+  await page.click("#tab-schem");
+  await page.locator("#editor .cm-content").fill("* t\nr1 a 0 1k\nr2 a b 2k\nc1 b 0 1p\nvs a 0 1\n.op\n");
+  await expect(page.locator("#schem .el")).toHaveCount(4, { timeout: 5000 });
+});

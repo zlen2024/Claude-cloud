@@ -27,6 +27,11 @@
         </div>
       </section>
       <section class="col">
+        <div class="tabs" role="tablist">
+          <button id="tab-plot" role="tab" aria-selected="true" class="on">Plot</button>
+          <button id="tab-schem" role="tab" aria-selected="false">Skema</button>
+        </div>
+        <div id="schem" class="schemwrap" hidden></div>
         <div class="plotwrap"><canvas id="plot" aria-label="Plot keputusan simulation"></canvas></div>
         <div id="legend" class="legend"></div>
         <div class="bar tools">
