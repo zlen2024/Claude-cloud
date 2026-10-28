@@ -1,3 +1,4 @@
+import { t } from "./i18n/index.js";
 // Bantu tukar keputusan engine kepada isyarat yang boleh diplot.
 
 export const unitOf = (name) => (/^v\(/i.test(name) ? "V" : /^i\(/i.test(name) ? "A" : "");
@@ -70,7 +71,7 @@ export function buildSignals(res, netlist = "") {
         const raw = Array.from(d.values, (c) => (Math.atan2(c.img, c.real) * 180) / Math.PI);
         return { name: d.name, unit: unitOf(d.name), mag, phase: Float64Array.from(unwrap(raw)) };
       });
-    return { kind: "ac", x, xLabel: "frekuensi (Hz)", xLog: true, signals, segments: [[0, x.length]], segLabels: [""] };
+    return { kind: "ac", x, xLabel: t("ac.freq"), xLog: true, signals, segments: [[0, x.length]], segLabels: [""] };
   }
   const x = xd.values instanceof Float64Array ? xd.values : Float64Array.from(xd.values);
   const isDc = /^\s*\.dc\b/im.test(netlist);

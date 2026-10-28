@@ -1,6 +1,6 @@
 {
   "name": "sky130-analog-lab",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Browser-based SKY130 analog lab (ngspice WASM) untuk belajar analog IC design",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "smoke": "npm test"
+    "smoke": "npm test",
+    "test:e2e:pwa": "playwright test -c playwright.pwa.config.js"
   },
   "keywords": [],
   "author": "",

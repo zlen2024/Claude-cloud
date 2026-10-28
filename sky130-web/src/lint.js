@@ -1,3 +1,4 @@
+import { t } from "./i18n/index.js";
 // Petua lint sebelum run. Pulang [{line, severity, message, fix?}], line bermula 1 (0 = seluruh netlist).
 
 export const HEADER_LINES = [
@@ -32,18 +33,18 @@ export function lintNetlist(text) {
   if (usesSky && !(has.mc(text) && has.scale(text) && has.include(text))) {
     out.push({
       line: 0, severity: "warning", fixId: "header",
-      message: "Tiga baris wajib SKY130 tidak lengkap (.param mc_switch=0, .option scale=1.0u, .include modelcard.skywater)",
+      message: t("lint.header"),
     });
   }
   if (!lines.some((l) => /^\s*\.(dc|tran|ac|op)\b/i.test(l))) {
-    out.push({ line: 0, severity: "warning", message: "Tiada baris analisis (.dc, .tran, .ac atau .op)" });
+    out.push({ line: 0, severity: "warning", message: t("lint.analysis") });
   }
   lines.forEach((l, i) => {
     const n = i + 1;
     if (/^\s*m\w*\s/i.test(l) && /sky130_fd_pr__/i.test(l)) {
       out.push({
         line: n, severity: "warning",
-        message: "Model SKY130 ialah subcircuit: guna nama bermula 'x' (contoh xm1), bukan 'm'",
+        message: t("lint.mprefix"),
       });
     }
     if (usesSky && /^\s*x/i.test(l)) {
@@ -52,7 +53,7 @@ export function lintNetlist(text) {
         if (v < 1e-3) {
           out.push({
             line: n, severity: "warning",
-            message: `${m[1]}=${m[2]} nampak seperti meter, tetapi scale=1u bermakna unit ialah mikron (contoh ${m[1]}=${Number((v * 1e6).toPrecision(3))})`,
+            message: t("lint.meters", { p: m[1], v: m[2], fix: Number((v * 1e6).toPrecision(3)) }),
           });
         }
       }

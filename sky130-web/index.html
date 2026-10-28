@@ -3,49 +3,77 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Makmal analog IC dalam browser: ngspice WebAssembly dengan model transistor SkyWater SKY130." />
+    <meta name="theme-color" content="#0f131a" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
     <title>SKY130 Analog Lab</title>
+    <script>
+      // tema awal sebelum render supaya tiada kelipan
+      try {
+        var th = localStorage.getItem("sky130lab:theme");
+        if (!th) th = window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        document.documentElement.dataset.theme = th;
+      } catch (e) {
+        document.documentElement.dataset.theme = "dark";
+      }
+    </script>
   </head>
   <body>
+    <a class="skip" href="#editor" data-i18n="skip">Langkau ke editor</a>
     <header>
-      <h1>SKY130 Analog Lab <span>ngspice dalam browser</span></h1>
+      <h1><span data-i18n="app.title">SKY130 Analog Lab</span> <span class="sub" data-i18n="header.sub">ngspice dalam browser</span></h1>
+      <span class="grow"></span>
+      <button id="about-btn" data-i18n="btn.about">Tentang</button>
+      <button id="theme-btn" aria-label="Tema" data-i18n-attr="title:btn.theme.title;aria-label:btn.theme.title">&#9680;</button>
+      <button id="lang-btn" data-i18n="btn.lang" data-i18n-attr="title:btn.lang.title">EN</button>
     </header>
     <main>
-      <nav id="outline" class="outline" aria-label="Kursus"></nav>
+      <nav id="outline" class="outline" data-i18n-attr="aria-label:nav.course" aria-label="Kursus"></nav>
       <section class="col">
-        <article id="lesson-md" class="lesson-md"></article>
+        <article id="lesson-md" class="lesson-md" tabindex="0"></article>
         <div id="editor" class="editor"></div>
         <div id="hints" class="hints"></div>
         <div id="checks" class="checks" aria-live="polite"></div>
         <div class="bar">
-          <button id="run" class="primary">Run &#9654;</button>
-          <button id="check" title="Run dan semak tugasan">Semak &#10003;</button>
-          <button id="stop" disabled>Stop &#9632;</button>
-          <button id="reset">Reset lesson</button>
-          <button id="share" title="Salin pautan kongsi">Kongsi</button>
+          <button id="run" class="primary" data-i18n="btn.run">Run &#9654;</button>
+          <button id="check" data-i18n="btn.check" data-i18n-attr="title:btn.check.title">Semak &#10003;</button>
+          <button id="stop" disabled data-i18n="btn.stop">Stop &#9632;</button>
+          <button id="reset" data-i18n="btn.reset">Reset lesson</button>
+          <button id="share" data-i18n="btn.share" data-i18n-attr="title:btn.share.title">Kongsi</button>
           <span class="grow"></span>
-          <span id="status" class="status"></span>
+          <span id="status" class="status" role="status" aria-live="polite"></span>
         </div>
       </section>
       <section class="col">
         <div class="tabs" role="tablist">
-          <button id="tab-plot" role="tab" aria-selected="true" class="on">Plot</button>
-          <button id="tab-schem" role="tab" aria-selected="false">Skema</button>
+          <button id="tab-plot" role="tab" aria-selected="true" aria-controls="plotpanel" class="on" data-i18n="tab.plot">Plot</button>
+          <button id="tab-schem" role="tab" aria-selected="false" aria-controls="schem" data-i18n="tab.schem">Skema</button>
         </div>
-        <div id="schem" class="schemwrap" hidden></div>
-        <div class="plotwrap"><canvas id="plot" aria-label="Plot keputusan simulation"></canvas></div>
+        <div id="schem" class="schemwrap" role="tabpanel" hidden></div>
+        <div id="plotpanel" class="plotwrap" role="tabpanel"><canvas id="plot" role="img" data-i18n-attr="aria-label:plot.aria"></canvas></div>
         <div id="legend" class="legend"></div>
         <div class="bar tools">
-          <input id="expr" placeholder="Isyarat terbitan, contoh: -i(vd)   deriv(v(out))" spellcheck="false" aria-label="Ungkapan isyarat terbitan" />
-          <button id="expr-add">Tambah</button>
-          <button id="cur-a" title="Kursor A">A</button>
-          <button id="cur-b" title="Kursor B">B</button>
+          <input id="expr" spellcheck="false" data-i18n-attr="placeholder:expr.placeholder;aria-label:expr.aria" />
+          <button id="expr-add" data-i18n="btn.expr">Tambah</button>
+          <button id="cur-a" title="Kursor A" aria-label="Kursor A">A</button>
+          <button id="cur-b" title="Kursor B" aria-label="Kursor B">B</button>
           <button id="csv">CSV</button>
           <button id="png">PNG</button>
         </div>
-        <div id="info" class="info"></div>
-        <pre id="log" class="log"></pre>
+        <div id="info" class="info" role="status"></div>
+        <pre id="log" class="log" role="log"></pre>
       </section>
     </main>
+    <dialog id="about" aria-labelledby="about-title">
+      <h2 id="about-title" data-i18n="about.title">Tentang SKY130 Analog Lab</h2>
+      <p data-i18n="about.body"></p>
+      <p><span data-i18n="about.version">Versi</span>: <strong id="about-version"></strong></p>
+      <h3 data-i18n="about.credits">Kredit dan lesen</h3>
+      <pre id="about-notice" class="notice"></pre>
+      <p class="muted" data-i18n="about.limits"></p>
+      <form method="dialog"><button data-i18n="about.close">Tutup</button></form>
+    </dialog>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

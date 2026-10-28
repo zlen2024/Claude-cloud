@@ -4,22 +4,26 @@ import { runChecks } from "./checks.js";
 import { diffText } from "./diff.js";
 import { marked } from "marked";
 import { renderSchematic } from "./schematic/render.js";
+import { t, setLang, getLang, initLang, onLangChange } from "./i18n/index.js";
+import { prefetchEngine } from "./engine/prefetch.js";
 import { createEditor } from "./editor.js";
 import { lintNetlist, addSkyHeader } from "./lint.js";
-import { parseNgspiceErrors, PDK_MESSAGE } from "./errors.js";
+import { parseNgspiceErrors, pdkMessage } from "./errors.js";
 import { encodeShare, decodeShare } from "./share.js";
 import { store } from "./storage.js";
 import { Plot, colorFor, fmt } from "./plot.js";
 import { buildSignals, inferUnit, toCsv } from "./signals.js";
 import { evaluate, ExprError } from "./expr.js";
 import { f3db, unityGainFreq, phaseMargin } from "./measure.js";
+import pkg from "../package.json";
+import notice from "../NOTICE?raw";
 import "./style.css";
 
 const $ = (id) => document.getElementById(id);
 const els = {
   outline: $("outline"), lessonMd: $("lesson-md"), checksEl: $("checks"), check: $("check"), editorHost: $("editor"), hints: $("hints"), share: $("share"), run: $("run"), reset: $("reset"), stop: $("stop"),
   status: $("status"), legend: $("legend"), log: $("log"), plot: $("plot"), info: $("info"),
-  expr: $("expr"), exprAdd: $("expr-add"), curA: $("cur-a"), curB: $("cur-b"), csv: $("csv"), png: $("png"), tabPlot: $("tab-plot"), tabSchem: $("tab-schem"), schem: $("schem"), plotWrap: document.querySelector(".plotwrap"),
+  expr: $("expr"), exprAdd: $("expr-add"), curA: $("cur-a"), curB: $("cur-b"), csv: $("csv"), png: $("png"), langBtn: $("lang-btn"), themeBtn: $("theme-btn"), aboutBtn: $("about-btn"), about: $("about"), tabPlot: $("tab-plot"), tabSchem: $("tab-schem"), schem: $("schem"), plotWrap: document.querySelector(".plotwrap"),
 };
 
 const plot = new Plot(els.plot);
@@ -61,7 +65,7 @@ let view = "plot";
 function renderSchem() {
   if (view !== "schem") return;
   const r = renderSchematic(editor.getValue(), { layout: current.layout });
-  els.schem.innerHTML = r.svg || '<p class="desc">Tiada elemen untuk dilukis.</p>';
+  els.schem.innerHTML = r.svg || `<p class="muted">${t("schem.empty")}</p>`;
   markSchemActive();
 }
 
@@ -85,7 +89,7 @@ function setView(v) {
 function toggleNet(net) {
   const it = items.find((i) => i.name.toLowerCase() === `v(${net})`);
   if (!it) {
-    setStatus(`Tiada isyarat v(${net}). Jalankan simulation dahulu.`, "err");
+    setStatus(t("status.nosignal", { net }), "err");
     return;
   }
   it.on = !it.on;
@@ -114,7 +118,7 @@ function renderHints() {
     if (d.fixId === "header") {
       const b = document.createElement("button");
       b.id = "fix-header";
-      b.textContent = "Tambah header SKY130";
+      b.textContent = t("hint.addHeader");
       b.addEventListener("click", () => {
         editor.setValue(addSkyHeader(editor.getValue()));
         store.set(`netlist:${current.id}`, editor.getValue());
@@ -202,8 +206,8 @@ function plotData() {
     return {
       x, xLabel, xLog, segments, segLabels,
       panels: [
-        { axisLabels: { L: "gandaan (dB)" }, curves: active.map((s) => ({ name: `${s.name} (dB)`, values: s.mag, color: s.color })) },
-        { axisLabels: { L: "fasa (°)" }, curves: active.map((s) => ({ name: `${s.name} (°)`, values: s.phase, color: s.color })) },
+        { axisLabels: { L: t("ac.gain") }, curves: active.map((s) => ({ name: `${s.name} (dB)`, values: s.mag, color: s.color })) },
+        { axisLabels: { L: t("ac.phase") }, curves: active.map((s) => ({ name: `${s.name} (°)`, values: s.phase, color: s.color })) },
       ],
     };
   }
@@ -267,7 +271,7 @@ plot.onCursors = () => {
 
 function addDerived(src, { quiet = false } = {}) {
   if (!built || built.kind !== "real") {
-    if (!quiet) logLines(["Ungkapan terbitan hanya untuk keputusan .dc dan .tran."], "err");
+    if (!quiet) logLines([t("log.derivedOnly")], "err");
     return false;
   }
   try {
@@ -280,7 +284,7 @@ function addDerived(src, { quiet = false } = {}) {
     });
     return true;
   } catch (e) {
-    if (!quiet) logLines([e instanceof ExprError ? `Ungkapan: ${e.message} (pos ${e.pos})` : String(e)], "err");
+    if (!quiet) logLines([e instanceof ExprError ? t("log.expr", { msg: e.message, pos: e.pos }) : String(e)], "err");
     return false;
   }
 }
@@ -295,14 +299,14 @@ function renderOutline() {
     b.dataset.lesson = l.id;
     b.className = l === current ? "active" : "";
     b.setAttribute("aria-current", l === current ? "true" : "false");
-    const t = document.createElement("span");
-    t.textContent = l.title;
-    b.append(t);
+    const label = document.createElement("span");
+    label.textContent = l.title;
+    b.append(label);
     if (isDone(l)) {
       const k = document.createElement("span");
       k.className = "tick";
       k.textContent = "✓";
-      k.title = "Siap";
+      k.title = t("check.done.title");
       b.append(k);
     }
     b.addEventListener("click", () => loadLesson(ALL.indexOf(l)));
@@ -311,13 +315,13 @@ function renderOutline() {
   for (const [key, name] of Object.entries(MODULES)) {
     const ls = LESSONS.filter((l) => l.module === key);
     if (!ls.length) continue;
-    const h = document.createElement("h3");
-    h.textContent = `${key}. ${name}`;
+    const h = document.createElement("h2");
+    h.textContent = `${key}. ${t("module." + key)}`;
     els.outline.append(h);
     ls.forEach(add);
   }
-  const h = document.createElement("h3");
-  h.textContent = "Bebas";
+  const h = document.createElement("h2");
+  h.textContent = t("nav.free");
   els.outline.append(h);
   add(SCRATCH);
 }
@@ -338,12 +342,12 @@ function renderChecks(results) {
     body.textContent = c.label;
     const vals = document.createElement("div");
     vals.className = "vals";
-    vals.textContent = `sebenar: ${c.actual}   jangkaan: ${c.expected}`;
+    vals.textContent = `${t("check.actual", { v: c.actual })}   ${t("check.expected", { v: c.expected })}`;
     body.append(vals);
     row.append(mark, body);
     if (!c.pass) {
       const ladder = [...c.hints];
-      if (current.solution) ladder.push("Penyelesaian (beza daripada litar asal):\n" + (diffText(current.netlist, current.solution) || "(tiada beza)"));
+      if (current.solution) ladder.push(t("check.solution") + "\n" + (diffText(current.netlist, current.solution) || t("check.nodiff")));
       const key = `${current.id}/${c.id}`;
       const shown = hintLevel.get(key) ?? 0;
       if (shown > 0) {
@@ -356,7 +360,7 @@ function renderChecks(results) {
             box.append(pre);
           } else {
             const p = document.createElement("div");
-            p.textContent = `Petunjuk ${i + 1}: ${h}`;
+            p.textContent = t("check.hintN", { i: i + 1, h });
             box.append(p);
           }
         });
@@ -366,7 +370,7 @@ function renderChecks(results) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "hint-btn";
-        btn.textContent = `Petunjuk (${shown + 1}/${ladder.length})`;
+        btn.textContent = t("check.hint", { i: shown + 1, n: ladder.length });
         btn.addEventListener("click", () => {
           hintLevel.set(key, shown + 1);
           renderChecks(results);
@@ -379,7 +383,7 @@ function renderChecks(results) {
   if (results.every((c) => c.pass)) {
     const d = document.createElement("div");
     d.className = "done";
-    d.textContent = "Lesson siap! Semua semakan lulus.";
+    d.textContent = t("check.done");
     els.checksEl.append(d);
   }
 }
@@ -396,21 +400,29 @@ async function check() {
   }
 }
 
-function showRunErrors(errors, fallback = "Ralat tidak diketahui.") {
+function showRunErrors(errors, fallback = t("log.unknown")) {
   const { diagnostics, pdk, other } = parseNgspiceErrors(errors, netlistRun);
   runDiags = diagnostics;
   applyDiagnostics();
-  const lines = diagnostics.map((d) => `Baris ${d.line}: ${d.message}`);
-  if (pdk) lines.push(PDK_MESSAGE);
+  const lines = diagnostics.map((d) => t("log.line", { n: d.line, msg: d.message }));
+  if (pdk) lines.push(pdkMessage());
   if (!lines.length) lines.push(...(other.length ? other : [fallback]));
   logLines(lines, "err");
+}
+
+let engineWarm = false;
+async function warmEngine() {
+  if (engineWarm) return;
+  await prefetchEngine((bytes) => setStatus(t("status.loading", { mb: (bytes / 1e6).toFixed(1) }), "busy"));
+  engineWarm = true;
 }
 
 async function run() {
   els.run.disabled = true;
   els.stop.disabled = false;
   try {
-    setStatus("Simulating…", "busy");
+    await warmEngine();
+    setStatus(t("status.simulating"), "busy");
     netlistRun = editor.getValue();
     runDiags = [];
     applyDiagnostics();
@@ -421,7 +433,7 @@ async function run() {
       plot.clear();
       els.legend.innerHTML = "";
       setStatus("Error", "err");
-      showRunErrors(errors, "Simulation gagal tanpa mesej error.");
+      showRunErrors(errors, t("log.emptyfail"));
       return false;
     }
 
@@ -432,16 +444,16 @@ async function run() {
     renderLegend();
     plot.set(plotData());
     updateInfo();
-    setStatus(`OK · ${res.numPoints} titik · ${ms} ms`, "ok");
+    setStatus(t("status.ok", { n: res.numPoints, ms }), "ok");
     logLines(errors, errors.length ? "warn" : "");
     lastRes = res;
     return true;
   } catch (e) {
     if (e instanceof EngineAbortError) {
-      setStatus(e.reason === "timeout" ? "Timeout" : "Engine dimulakan semula", "err");
+      setStatus(e.reason === "timeout" ? t("status.timeout") : t("status.restarted"), "err");
       logLines(
         e.reason === "timeout"
-          ? [`Simulation lebih ${engine.timeoutMs / 1000}s dan dihentikan. Cuba besarkan step size (contoh .tran 10n -> 50n).`]
+          ? [t("log.timeout", { s: engine.timeoutMs / 1000 })]
           : [],
         "err",
       );
@@ -481,9 +493,9 @@ els.share.addEventListener("click", async () => {
   history.replaceState(null, "", url);
   try {
     await navigator.clipboard.writeText(url);
-    setStatus("Pautan kongsi disalin", "ok");
+    setStatus(t("status.shared"), "ok");
   } catch {
-    setStatus("Pautan kongsi ada dalam bar alamat", "ok");
+    setStatus(t("status.shared.bar"), "ok");
   }
 });
 els.tabPlot.addEventListener("click", () => setView("plot"));
@@ -522,6 +534,33 @@ els.curA.addEventListener("click", () => plot.toggleCursor("A"));
 els.curB.addEventListener("click", () => plot.toggleCursor("B"));
 els.csv.addEventListener("click", exportCsv);
 els.png.addEventListener("click", async () => built && download("sky130-lab.png", await plot.toPng()));
+function setTheme(th) {
+  document.documentElement.dataset.theme = th;
+  store.set("theme", th);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", th === "light" ? "#f4f6fa" : "#0f131a");
+  plot.draw();
+}
+els.themeBtn.addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light"));
+els.langBtn.addEventListener("click", () => setLang(getLang() === "ms" ? "en" : "ms"));
+els.aboutBtn.addEventListener("click", () => {
+  $("about-version").textContent = pkg.version;
+  $("about-notice").textContent = notice;
+  els.about.showModal();
+});
+onLangChange(() => {
+  renderOutline();
+  refreshLint();
+  renderSchem();
+  redraw();
+  updateInfo();
+  if (!built && /^(Sedia|Ready)$/.test(els.status.textContent)) setStatus(t("status.ready"));
+});
+
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+}
+
+initLang();
 const shared = decodeShare(location.hash);
 loadLesson(shared !== null ? ALL.length - 1 : 0, shared !== null ? { text: shared } : {});
-setStatus("Sedia");
+setStatus(t("status.ready"));

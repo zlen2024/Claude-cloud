@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.js";
 // Menjana SVG skema (rentetan tulen, deterministik supaya boleh di-snapshot).
 import { parseNetlist, isGround, isSupply } from "./parse.js";
 import { layoutGraph, CELL_W, CELL_H, MARGIN } from "./layout.js";
@@ -119,7 +120,7 @@ function pinSvg(net, p, signalOk) {
   const ty = p.dy < 0 ? ey - 4 : p.dy > 0 ? ey + 12 : ey + 4;
   const anchor = p.dx < 0 ? "end" : p.dx > 0 ? "start" : "middle";
   return (
-    `${line}<g class="netlabel" data-net="${esc(net)}" tabindex="0" role="button" aria-label="Papar isyarat v(${esc(net)})">` +
+    `${line}<g class="netlabel" data-net="${esc(net)}" tabindex="0" role="button" aria-label="${esc(t("schem.netlabel", { net }))}">` +
     `<text x="${r1(tx)}" y="${r1(ty)}" text-anchor="${anchor}">${esc(net)}</text></g>`
   );
 }
@@ -165,7 +166,7 @@ export function renderSchematic(netlist, opts = {}) {
       `</g>`;
   }
   const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" class="schem" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Skema litar">` +
-    `<title>Skema litar</title>${body}</svg>`;
+    `<svg xmlns="http://www.w3.org/2000/svg" class="schem" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(t("schem.aria"))}">` +
+    `<title>${esc(t("schem.aria"))}</title>${body}</svg>`;
   return { svg, width: W, height: H, nets: graph.nets, elements: graph.elements.length, warnings };
 }

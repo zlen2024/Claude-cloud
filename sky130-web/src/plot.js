@@ -1,7 +1,8 @@
 // Plot canvas (tanpa library): dua paksi Y, panel bertindan (Bode), segmen sapuan bersarang,
 // zoom (roda), pan (seret), dua kursor, eksport PNG.
 
-const PALETTE = ["#5aa9ff", "#ffb454", "#4ade80", "#f472b6", "#a78bfa", "#f87171", "#22d3ee", "#facc15"];
+// palet yang jelas pada latar gelap dan terang
+const PALETTE = ["#2f7ddf", "#e08a00", "#16a34a", "#db2777", "#7c5cdb", "#dc2626", "#0891b2", "#a16207"];
 export const colorFor = (i) => PALETTE[i % PALETTE.length];
 
 const SI = [
@@ -24,6 +25,8 @@ export function niceStep(range, target) {
   const f = n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10;
   return f * mag;
 }
+
+import { t } from "./i18n/index.js";
 
 const MONO = "12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 const css = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
@@ -204,7 +207,7 @@ export class Plot {
     if (!d || d.panels.every((p) => p.curves.length === 0)) {
       ctx.fillStyle = colors.muted;
       ctx.textAlign = "center";
-      ctx.fillText("Tekan Run (Ctrl+Enter) untuk simulate", w / 2, h / 2);
+      ctx.fillText(t("plot.empty"), w / 2, h / 2);
       if (interactive) this.layout = null;
       return;
     }
@@ -405,9 +408,11 @@ export class Plot {
       let bx = px + 12;
       if (bx + bw > ml + pw) bx = px - 12 - bw;
       const by = mt + 8;
-      ctx.fillStyle = "rgba(18,22,30,0.92)";
+      ctx.fillStyle = css("--surface", "#0b0f15");
+      ctx.globalAlpha = 0.94;
       ctx.strokeStyle = colors.frame;
       ctx.fillRect(bx, by, bw, bh);
+      ctx.globalAlpha = 1;
       ctx.strokeRect(bx + 0.5, by + 0.5, bw, bh);
       ctx.textAlign = "left";
       shown.forEach((l, i) => {
@@ -425,7 +430,7 @@ export class Plot {
     out.height = h * 2;
     const ctx = out.getContext("2d");
     ctx.scale(2, 2);
-    ctx.fillStyle = css("--bg", "#0f131a");
+    ctx.fillStyle = css("--surface", "#0b0f15");
     ctx.fillRect(0, 0, w, h);
     this._paint(ctx, w, h, false);
     return new Promise((res) => out.toBlob(res, "image/png"));

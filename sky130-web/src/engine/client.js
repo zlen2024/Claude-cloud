@@ -1,6 +1,8 @@
 // API promise untuk worker engine. Satu request pada satu masa.
 // Stop / timeout = terminate worker dan cipta yang baru (ngspice-wasm tak boleh diinterupsi).
 
+import workerUrl from "./worker.js?worker&url";
+
 export class EngineBusyError extends Error {}
 export class EngineAbortError extends Error {
   constructor(reason) {
@@ -12,8 +14,7 @@ export class EngineAbortError extends Error {
 export class Engine {
   constructor({ timeoutMs = 20000, workerFactory } = {}) {
     this.timeoutMs = timeoutMs;
-    this.workerFactory =
-      workerFactory ?? (() => new Worker(new URL("./worker.js", import.meta.url), { type: "module" }));
+    this.workerFactory = workerFactory ?? (() => new Worker(workerUrl, { type: "module" }));
     this.worker = null;
     this.ready = null;
     this.pending = null; // { id, resolve, reject, timer }

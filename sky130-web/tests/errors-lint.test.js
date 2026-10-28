@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseNgspiceErrors, PDK_MESSAGE } from "../src/errors.js";
+import { parseNgspiceErrors, pdkMessage } from "../src/errors.js";
 import { lintNetlist, addSkyHeader, HEADER_LINES } from "../src/lint.js";
 
 const NET = "* t\nxm1 d g 0 0 foo w=1 l=0.15\nvd d 0 1\n.dc vx 0 1 0.1\n.end";
@@ -30,7 +30,7 @@ describe("parseNgspiceErrors", () => {
     const r = parseNgspiceErrors(["Error on line 20322 or its substitute:", "  .model something", "bad"], "* t\n.op");
     expect(r.pdk).toBe(true);
     expect(r.diagnostics).toEqual([]);
-    expect(PDK_MESSAGE).toMatch(/model PDK/);
+    expect(pdkMessage()).toMatch(/model PDK/);
   });
   it("amaran elemen tak sah dan sumber .dc tiada", () => {
     const net = "* t\nr1 a\n.dc vx 0 1 0.1";

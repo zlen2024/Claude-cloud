@@ -1,6 +1,8 @@
 // Penilai ungkapan selamat (tiada eval). Contoh: -i(vd), v(out)-v(in), deriv(v(out)), db(v(out)/v(in)).
 // ctx = { signals: { "v(out)": Float64Array }, x: Float64Array, segments?: [[start,end],...] }
 
+import { t as tr } from "./i18n/index.js";
+
 export class ExprError extends Error {
   constructor(message, pos) {
     super(message);
@@ -45,7 +47,7 @@ function tokenize(src, names) {
       i += id[0].length;
       continue;
     }
-    throw new ExprError(`Aksara tak dijangka '${c}'`, i);
+    throw new ExprError(tr("expr.char", { c }), i);
   }
   toks.push({ t: "end", pos: src.length });
   return toks;
@@ -77,7 +79,7 @@ function zip(a, b, f) {
 }
 
 function deriv(y, ctx) {
-  if (typeof y === "number") throw new ExprError("deriv() perlu isyarat, bukan nombor", 0);
+  if (typeof y === "number") throw new ExprError(tr("expr.deriv"), 0);
   const x = ctx.x;
   const segs = ctx.segments ?? [[0, y.length]];
   const out = new Float64Array(y.length);
@@ -96,7 +98,7 @@ export function evaluate(src, ctx) {
   let p = 0;
   const peek = () => toks[p];
   const eat = (t) => {
-    if (toks[p].t !== t) throw new ExprError(`Jangka '${t}'`, toks[p].pos);
+    if (toks[p].t !== t) throw new ExprError(tr("expr.expect", { t }), toks[p].pos);
     return toks[p++];
   };
 
@@ -138,20 +140,20 @@ export function evaluate(src, ctx) {
       if (peek().t !== "(") {
         if (t.name === "x" && ctx.x) return ctx.x;
         if (Object.hasOwn(CONSTS, t.name)) return CONSTS[t.name];
-        throw new ExprError(`Nama tak dikenali '${t.name}'`, t.pos);
+        throw new ExprError(tr("expr.name", { n: t.name }), t.pos);
       }
       const fn = Object.hasOwn(FUNCS, t.name) ? FUNCS[t.name] : null;
-      if (!fn) throw new ExprError(`Fungsi tak dikenali '${t.name}'`, t.pos);
+      if (!fn) throw new ExprError(tr("expr.fn", { n: t.name }), t.pos);
       eat("(");
       const arg = expr();
       eat(")");
       return fn.ctx ? deriv(arg, ctx) : fn.f(arg);
     }
-    throw new ExprError("Ungkapan tak lengkap", t.pos);
+    throw new ExprError(tr("expr.incomplete"), t.pos);
   }
 
   const v = expr();
-  if (peek().t !== "end") throw new ExprError("Aksara berlebihan", peek().pos);
+  if (peek().t !== "end") throw new ExprError(tr("expr.extra"), peek().pos);
   if (typeof v === "number") return Float64Array.from({ length: ctx.x?.length ?? 1 }, () => v);
   return v;
 }

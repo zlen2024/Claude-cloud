@@ -4,7 +4,7 @@ const set = (page, text) => page.locator("#editor .cm-content").fill(text);
 
 test("sidebar menyenaraikan modul dan lesson, dan memuat lesson", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#outline h3").first()).toContainText("A. MOSFET");
+  await expect(page.locator("#outline h2").first()).toContainText("A. MOSFET");
   await page.click('[data-lesson="b3-inverter-delay"]');
   await expect(page.locator("#lesson-md h1")).toContainText("transient");
   await expect(page.locator("#editor .cm-content")).toContainText("pulse(");
@@ -72,4 +72,57 @@ test("skema dikemas kini bila netlist diedit", async ({ page }) => {
   await page.click("#tab-schem");
   await page.locator("#editor .cm-content").fill("* t\nr1 a 0 1k\nr2 a b 2k\nc1 b 0 1p\nvs a 0 1\n.op\n");
   await expect(page.locator("#schem .el")).toHaveCount(4, { timeout: 5000 });
+});
+
+test("tukar bahasa BM <-> EN dan kekal selepas reload", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#status")).toHaveText("Sedia");
+  await page.click("#lang-btn");
+  await expect(page.locator("#status")).toHaveText("Ready");
+  await expect(page.locator("#tab-schem")).toHaveText("Schematic");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("#outline h2").first()).toContainText("The MOSFET");
+  await page.reload();
+  await expect(page.locator("#tab-schem")).toHaveText("Schematic");
+  await page.click("#run");
+  await expect(page.locator("#status")).toContainText("points", { timeout: 60000 });
+  await page.click("#lang-btn");
+  await expect(page.locator("#tab-schem")).toHaveText("Skema");
+});
+
+test("tema terang/gelap boleh ditukar dan disimpan", async ({ page }) => {
+  await page.goto("/");
+  const before = await page.locator("html").getAttribute("data-theme");
+  await page.click("#theme-btn");
+  const after = await page.locator("html").getAttribute("data-theme");
+  expect(after).not.toBe(before);
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", after);
+});
+
+test("dialog Tentang menunjukkan kredit dan versi", async ({ page }) => {
+  await page.goto("/");
+  await page.click("#about-btn");
+  await expect(page.locator("#about")).toBeVisible();
+  await expect(page.locator("#about-notice")).toContainText("eecircuit-engine");
+  await expect(page.locator("#about-version")).toHaveText(/\d+\.\d+\.\d+/);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#about")).toBeHidden();
+});
+
+test("susun atur 360px: tiada skrol mendatar halaman", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto("/");
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+  await page.screenshot({ path: "test-results/mobile.png", fullPage: true });
+});
+
+test("navigasi papan kekunci: Tab sampai ke butang Run dengan fokus kelihatan", async ({ page }) => {
+  await page.goto("/");
+  await page.focus("#run");
+  const outline = await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle);
+  expect(outline).not.toBe("none");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#status")).toContainText("OK", { timeout: 60000 });
 });

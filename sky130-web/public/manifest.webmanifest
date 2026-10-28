@@ -1,0 +1,14 @@
+{
+  "name": "SKY130 Analog Lab",
+  "short_name": "SKY130 Lab",
+  "description": "Makmal analog IC dalam browser (ngspice WASM + SKY130)",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f131a",
+  "theme_color": "#0f131a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

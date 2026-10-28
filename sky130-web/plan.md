@@ -229,8 +229,9 @@ Write lessons in this order. Each needs theory text, a starting circuit, checks 
 - [x] Guided lesson system with automated checks and hints
 - [x] Modules A–E written, each solution passing its checks in CI
 - [x] Schematic viewer for every lesson
-- [ ] BM and EN UI, PWA offline mode, responsive layout
-- [ ] Unit, engine and e2e tests green in CI; deployed on GitHub Pages
+- [x] BM and EN UI, PWA offline mode, responsive layout
+- [x] Unit, engine and e2e tests green locally (CI workflow ada, lihat .github/workflows)
+- [ ] Deployed on GitHub Pages (perlu merge ke `main` dan Pages diaktifkan dalam tetapan repo)
 - [x] `docs/device-support.md` and `docs/engine-notes.md` written
 
 ## Out of scope for v1.0
@@ -247,4 +248,4 @@ Layout editing (Magic-style), DRC/LVS, parasitic extraction, Monte Carlo and cor
 - [x] Phase 5: Lesson system
 - [x] Phase 6: Curriculum (modul A hingga E; modul F dijadualkan v1.1)
 - [x] Phase 7: Schematic view (7a viewer; 7b editor dijadualkan v1.1)
-- [ ] Phase 8: Polish and v1.0
+- [x] Phase 8: Polish and v1.0

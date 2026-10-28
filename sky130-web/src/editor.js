@@ -5,6 +5,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { StreamLanguage, syntaxHighlighting, HighlightStyle, indentOnInput, bracketMatching } from "@codemirror/language";
 import { setDiagnostics, lintGutter } from "@codemirror/lint";
 import { tags as t } from "@lezer/highlight";
+import { t as tr } from "./i18n/index.js";
 
 const NUM = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?(meg|[tgkmunpf])?(?![a-z_])/i;
 
@@ -39,28 +40,28 @@ export const spiceLanguage = StreamLanguage.define({
 });
 
 const highlight = HighlightStyle.define([
-  { tag: t.lineComment, color: "#6b7a90", fontStyle: "italic" },
-  { tag: t.keyword, color: "#c792ea" },
-  { tag: t.typeName, color: "#5aa9ff" },
-  { tag: t.atom, color: "#4ade80" },
-  { tag: t.propertyName, color: "#ffb454" },
-  { tag: t.number, color: "#f78c6c" },
-  { tag: t.variableName, color: "#d7dde8" },
+  { tag: t.lineComment, color: "var(--hl-comment)", fontStyle: "italic" },
+  { tag: t.keyword, color: "var(--hl-keyword)" },
+  { tag: t.typeName, color: "var(--hl-type)" },
+  { tag: t.atom, color: "var(--hl-atom)" },
+  { tag: t.propertyName, color: "var(--hl-prop)" },
+  { tag: t.number, color: "var(--hl-number)" },
+  { tag: t.variableName, color: "var(--text)" },
 ]);
 
 const theme = EditorView.theme(
   {
-    "&": { height: "100%", backgroundColor: "#0b0f15", color: "#e3e9f3", fontSize: "13px" },
+    "&": { height: "100%", backgroundColor: "var(--surface)", color: "var(--text-strong)", fontSize: "13px" },
     ".cm-scroller": { fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace", lineHeight: "1.55" },
-    ".cm-gutters": { backgroundColor: "#0b0f15", color: "#4b5568", border: "none" },
+    ".cm-gutters": { backgroundColor: "var(--surface)", color: "var(--muted)", border: "none" },
     ".cm-activeLine": { backgroundColor: "rgba(90,169,255,0.06)" },
     ".cm-activeLineGutter": { backgroundColor: "transparent", color: "#8b93a1" },
-    "&.cm-focused": { outline: "1px solid #5aa9ff" },
-    ".cm-cursor": { borderLeftColor: "#e3e9f3" },
+    "&.cm-focused": { outline: "2px solid var(--accent)" },
+    ".cm-cursor": { borderLeftColor: "var(--text-strong)" },
     ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": { backgroundColor: "rgba(90,169,255,0.28)" },
-    ".cm-tooltip": { backgroundColor: "#151a23", border: "1px solid #262d3a", color: "#d7dde8" },
+    ".cm-tooltip": { backgroundColor: "#151a23", border: "1px solid #262d3a", color: "var(--text)" },
   },
-  { dark: true },
+  {},
 );
 
 export function createEditor(parent, { doc = "", onChange, onRun } = {}) {
@@ -85,7 +86,7 @@ export function createEditor(parent, { doc = "", onChange, onRun } = {}) {
           ...historyKeymap,
           indentWithTab,
         ]),
-        EditorView.contentAttributes.of({ "aria-label": "Netlist editor", spellcheck: "false" }),
+        EditorView.contentAttributes.of({ "aria-label": tr("editor.aria"), spellcheck: "false" }),
         EditorView.updateListener.of((u) => u.docChanged && onChange?.(u)),
       ],
     }),
