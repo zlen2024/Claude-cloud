@@ -1,4 +1,4 @@
-import { Simulation } from "eecircuit-engine";
+import { Engine, EngineAbortError } from "./engine/client.js";
 import { LESSONS } from "./lessons.js";
 import { Plot, colorFor } from "./plot.js";
 import "./style.css";
@@ -10,6 +10,7 @@ const els = {
   editor: $("editor"),
   run: $("run"),
   reset: $("reset"),
+  stop: $("stop"),
   status: $("status"),
   legend: $("legend"),
   log: $("log"),
@@ -17,7 +18,7 @@ const els = {
 };
 
 const plot = new Plot(els.plot);
-let sim = null;
+const engine = new Engine();
 let result = null;
 let xData = null;
 let signals = []; // { name, values, color, on }
@@ -30,15 +31,6 @@ function setStatus(text, kind = "") {
 function logLines(lines, kind = "") {
   els.log.className = `log ${kind}`;
   els.log.textContent = lines.join("\n");
-}
-
-async function getSim() {
-  if (!sim) {
-    setStatus("Loading ngspice (WASM)…", "busy");
-    sim = new Simulation();
-    await sim.start();
-  }
-  return sim;
 }
 
 function loadLesson(index) {
@@ -88,15 +80,10 @@ function redraw() {
 
 async function run() {
   els.run.disabled = true;
+  els.stop.disabled = false;
   try {
-    const s = await getSim();
     setStatus("Simulating…", "busy");
-    await new Promise((r) => setTimeout(r, 20)); // bagi browser repaint status dulu
-    const t0 = performance.now();
-    s.setNetList(els.editor.value);
-    const res = await s.runSim();
-    const ms = Math.round(performance.now() - t0);
-    const errors = s.getError().filter((l) => l.trim());
+    const { result: res, errors, ms } = await engine.run(els.editor.value);
 
     if (!res || res.numVariables === 0 || res.data.length === 0) {
       result = null;
@@ -132,10 +119,21 @@ async function run() {
     setStatus(`OK · ${res.numPoints} titik · ${ms} ms`, "ok");
     logLines(errors, errors.length ? "warn" : "");
   } catch (e) {
-    setStatus("Error", "err");
-    logLines([String(e?.message ?? e)], "err");
+    if (e instanceof EngineAbortError) {
+      setStatus(e.reason === "timeout" ? "Timeout" : "Engine dimulakan semula", "err");
+      logLines(
+        e.reason === "timeout"
+          ? [`Simulation lebih ${engine.timeoutMs / 1000}s dan dihentikan. Cuba besarkan step size (contoh .tran 10n -> 50n).`]
+          : [],
+        "err",
+      );
+    } else {
+      setStatus("Error", "err");
+      logLines(e?.errors?.length ? e.errors : [String(e?.message ?? e)], "err");
+    }
   } finally {
     els.run.disabled = false;
+    els.stop.disabled = true;
   }
 }
 
@@ -148,6 +146,7 @@ LESSONS.forEach((l, i) => {
 els.lesson.addEventListener("change", () => loadLesson(Number(els.lesson.value)));
 els.reset.addEventListener("click", () => loadLesson(Number(els.lesson.value)));
 els.run.addEventListener("click", run);
+els.stop.addEventListener("click", () => engine.stop());
 els.editor.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
     e.preventDefault();

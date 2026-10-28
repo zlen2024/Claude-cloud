@@ -223,7 +223,7 @@ Write lessons in this order. Each needs theory text, a starting circuit, checks 
 
 ## Definition of done (v1.0)
 
-- [ ] Engine runs in a Web Worker with Stop and timeout
+- [x] Engine runs in a Web Worker with Stop and timeout
 - [ ] Plots: dual axis, nested sweep, AC Bode, zoom and pan, cursors, CSV and PNG export
 - [ ] CodeMirror editor with error underline, linter hints, autosave and share links
 - [ ] Guided lesson system with automated checks and hints
@@ -241,7 +241,7 @@ Layout editing (Magic-style), DRC/LVS, parasitic extraction, Monte Carlo and cor
 
 - [x] Phase 0: MVP (v0.1.0)
 - [x] Phase 1: Foundations (git sudah wujud di root repo; CI + Pages workflow di .github/workflows)
-- [ ] Phase 2: Web Worker engine
+- [x] Phase 2: Web Worker engine
 - [ ] Phase 3: Results and plotting
 - [ ] Phase 4: Editor and sharing
 - [ ] Phase 5: Lesson system

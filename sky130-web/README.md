@@ -51,7 +51,7 @@ Tanpa `scale`, ngspice tak jumpa bin model yang sesuai ("could not find a valid 
 - Hanya model nfet/pfet 1.8V (nfet_01v8, pfet_01v8, pfet_01v8_hvt) yang disahkan di sini. Resistor, kapasitor dan BJT PDK belum diuji.
 - Analisis AC belum diplot. Nested sweep (`.dc` dua pembolehubah) belum diplot dengan betul.
 - Plot guna satu paksi Y, jadi pilih sama ada voltan atau arus pada satu masa.
-- Simulation jalan atas thread utama browser, jadi UI beku sekejap semasa run. Bundle ~20 MB (5.8 MB gzip).
+- Simulation jalan dalam Web Worker (ada butang Stop dan timeout 20s). Bundle ~20 MB (5.8 MB gzip).
 - UI belum diuji secara visual dalam browser oleh pembina. Engine dan semua lesson diuji dalam Node (`npm run smoke`) dan build Vite berjaya.
 
 ## Idea seterusnya
