@@ -5,7 +5,7 @@ const set = (page, text) => page.locator("#editor .cm-content").fill(text);
 test("sidebar menyenaraikan modul dan lesson, dan memuat lesson", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#outline h3").first()).toContainText("A. MOSFET");
-  await page.click('[data-lesson="b2-inverter-delay"]');
+  await page.click('[data-lesson="b3-inverter-delay"]');
   await expect(page.locator("#lesson-md h1")).toContainText("transient");
   await expect(page.locator("#editor .cm-content")).toContainText("pulse(");
 });
