@@ -23,7 +23,7 @@ def test_requires_login(client):
     ("aina", "/api/orders", 200), ("aina", "/api/customers", 403), ("aina", "/api/admin/stats", 403),
     ("aina", "/api/campaigns", 403), ("aina", "/api/staff", 403),
     ("mira", "/api/customers", 200), ("mira", "/api/notifications", 200), ("mira", "/api/admin/stats", 403),
-    ("mira", "/api/campaigns", 403), ("boss", "/api/admin/stats", 200), ("boss", "/api/staff", 200),
+    ("mira", "/api/campaigns", 403), ("mira", "/api/orders", 200), ("boss", "/api/admin/stats", 200), ("boss", "/api/staff", 200),
 ])
 def test_role_permissions(login, user, path, expected):
     assert login(user).get(path).status_code == expected

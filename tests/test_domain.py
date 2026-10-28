@@ -105,7 +105,7 @@ def test_role_permissions():
     from app.domain.enums import Permission
     sales = Staff(name="M", username="m", role=Role.SALES, active=True)
     assert sales.can(Permission.MANAGE_ORDERS) and not sales.can(Permission.SEND_CAMPAIGNS)
-    assert not sales.can_work_on(Department.DESIGN)
+    assert not sales.can_work_on(Department.DESIGN) and not sales.can(Permission.UPDATE_TASKS)
 
 
 def test_dispatcher_marks_rows_and_retries():

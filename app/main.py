@@ -1,3 +1,5 @@
+import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -15,6 +17,8 @@ STATIC = Path(__file__).parent / "static"
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    if not os.getenv("SECRET_KEY"):
+        logging.getLogger("orderflow").warning("SECRET_KEY not set: sessions reset on every restart.")
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         seed(db)

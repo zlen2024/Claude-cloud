@@ -66,8 +66,8 @@ class Role(StrEnum):
 _FLOOR = frozenset({Permission.VIEW_ORDERS, Permission.UPDATE_TASKS})
 _ROLE_PERMISSIONS = {
     Role.ADMIN: frozenset(Permission),
-    Role.SALES: _FLOOR | {Permission.MANAGE_ORDERS, Permission.MANAGE_CUSTOMERS,
-                          Permission.VIEW_NOTIFICATIONS, Permission.IMPORT_EXPORT},
+    Role.SALES: frozenset({Permission.VIEW_ORDERS, Permission.MANAGE_ORDERS, Permission.MANAGE_CUSTOMERS,
+                          Permission.VIEW_NOTIFICATIONS, Permission.IMPORT_EXPORT}),  # sales views work, never updates it
     Role.DESIGN: _FLOOR,
     Role.PRODUCTION: _FLOOR,
     Role.DELIVERY: _FLOOR,
