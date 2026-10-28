@@ -1,0 +1,22 @@
+{
+  "name": "sky130-analog-lab",
+  "version": "0.1.0",
+  "description": "Browser-based SKY130 analog lab (ngspice WASM) untuk belajar analog IC design",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "smoke": "node scripts/smoke-test.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "eecircuit-engine": "^1.9.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.5"
+  },
+  "private": true,
+  "type": "module"
+}

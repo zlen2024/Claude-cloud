@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ms">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SKY130 Analog Lab</title>
+  </head>
+  <body>
+    <header>
+      <h1>SKY130 Analog Lab <span>ngspice dalam browser</span></h1>
+      <select id="lesson" aria-label="Pilih lesson"></select>
+    </header>
+    <main>
+      <section class="col">
+        <p class="desc" id="desc"></p>
+        <textarea id="editor" spellcheck="false" aria-label="Netlist editor"></textarea>
+        <div class="bar">
+          <button id="run" class="primary">Run &#9654;</button>
+          <button id="reset">Reset lesson</button>
+          <span class="grow"></span>
+          <span id="status" class="status"></span>
+        </div>
+      </section>
+      <section class="col">
+        <div class="plotwrap"><canvas id="plot"></canvas></div>
+        <div id="legend" class="legend"></div>
+        <pre id="log" class="log"></pre>
+      </section>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
