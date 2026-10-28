@@ -1,16 +1,18 @@
 """Application services: load entities, call their behaviour, persist, fire notifications."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import date
+import csv
+import io
+from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ..domain.enums import Channel, Department, OrderStatus, TaskState
-from ..domain.errors import NotFound
+from ..domain.enums import Channel, Department, OrderStatus, Role, TaskState
+from ..domain.errors import InvalidOperation, NotFound
 from ..domain.models import (Campaign, Customer, Notification, Order, SegmentPolicy, Staff, Tag)
-from .notifiers import NotificationCenter
+from .notifiers import Dispatcher, NotificationCenter
 
 
 class Repository:
@@ -46,6 +48,29 @@ class StaffService(Repository):
     def all(self) -> list[Staff]:
         return list(self.db.scalars(select(Staff).order_by(Staff.id)))
 
+    def create(self, name: str, username: str, role: Role, password: str) -> Staff:
+        username = username.strip().lower()
+        if self.db.scalar(select(Staff.id).where(Staff.username == username)):
+            raise InvalidOperation("Username sudah digunakan")
+        staff = Staff(name=name.strip(), username=username, role=role)
+        staff.set_password(password)
+        self.db.add(staff)
+        self.db.commit()
+        return staff
+
+    def update(self, staff: Staff, actor: Staff, role: Role | None = None, active: bool | None = None,
+               password: str | None = None) -> Staff:
+        if staff.id == actor.id and (active is False or (role and role is not Role.ADMIN)):
+            raise InvalidOperation("Tak boleh nyahaktif atau turunkan role akaun sendiri")
+        if role:
+            staff.role = role
+        if active is not None:
+            staff.active = active
+        if password:
+            staff.set_password(password)
+        self.db.commit()
+        return staff
+
 
 class CustomerService(Repository):
     model = Customer
@@ -64,6 +89,68 @@ class CustomerService(Repository):
         names = sorted({n.strip().lower() for n in names if n.strip()})
         existing = {t.name: t for t in self.db.scalars(select(Tag).where(Tag.name.in_(names)))}
         return [existing.get(n) or Tag(name=n) for n in names]
+
+    def by_consent_token(self, token: str) -> Customer:
+        c = self.db.scalar(select(Customer).where(Customer.consent_token == token))
+        if not c:
+            raise NotFound("Link tidak sah")
+        return c
+
+    def update_consent(self, customer: Customer, consent: dict[Channel, bool], source: str) -> Customer:
+        for ch, granted in consent.items():
+            customer.set_consent(Channel(ch), bool(granted), source)
+        self.db.commit()
+        return customer
+
+    def find_existing(self, phone: str, email: str) -> Customer | None:
+        tmp = Customer(phone=phone)
+        if phone and tmp.phone_e164:
+            for c in self.db.scalars(select(Customer).where(Customer.phone != "")):
+                if c.phone_e164 == tmp.phone_e164:
+                    return c
+        if email:
+            return self.db.scalar(select(Customer).where(func.lower(Customer.email) == email.strip().lower()))
+        return None
+
+    CSV_FIELDS = ["name", "phone", "email", "tags", "notes", "consent_whatsapp", "consent_email", "consent_sms"]
+
+    def import_csv(self, text: str) -> dict:
+        """Create or update customers from a spreadsheet export. Matches existing rows on phone, then email."""
+        created = updated = 0
+        errors: list[str] = []
+        reader = csv.DictReader(io.StringIO(text.lstrip("\ufeff")))
+        if not reader.fieldnames or "name" not in [f.strip().lower() for f in reader.fieldnames]:
+            raise InvalidOperation("CSV mesti ada column 'name'")
+        truthy = {"1", "y", "yes", "ya", "true", "setuju"}
+        for i, raw in enumerate(reader, start=2):
+            row = {(k or "").strip().lower(): (v or "").strip() for k, v in raw.items()}
+            if not row.get("name"):
+                errors.append(f"Baris {i}: tiada nama")
+                continue
+            existing = self.find_existing(row.get("phone", ""), row.get("email", ""))
+            data = {
+                "name": row["name"], "phone": row.get("phone", ""), "email": row.get("email", ""),
+                "notes": row.get("notes", ""),
+                "tags": [t for t in row.get("tags", "").replace(";", ",").split(",") if t.strip()],
+                "consent": {ch: row[f"consent_{ch}"].lower() in truthy
+                            for ch in Channel if f"consent_{ch}" in row and row[f"consent_{ch}"] != ""},
+            }
+            if existing:
+                data["tags"] = sorted(set(existing.tag_names) | set(t.strip().lower() for t in data["tags"]))
+            self.save(data, existing, source="import")
+            updated += bool(existing)
+            created += not existing
+        return {"created": created, "updated": updated, "errors": errors}
+
+    def export_csv(self) -> str:
+        out = io.StringIO()
+        w = csv.writer(out)
+        w.writerow(self.CSV_FIELDS + ["segment", "order_count", "total_spent"])
+        for c in self.search():
+            w.writerow([c.name, c.phone, c.email, ",".join(c.tag_names), c.notes,
+                        *[int(c.has_consent(ch)) for ch in Channel],
+                        c.segment(self.policy), len(c.orders), f"{c.total_spent:.2f}"])
+        return out.getvalue()
 
     def save(self, data: dict, customer: Customer | None = None, source: str = "staff") -> Customer:
         customer = customer or Customer()
@@ -112,6 +199,22 @@ class OrderService(Repository):
         self.db.commit()
         return order
 
+    def edit(self, order_id: int, **fields) -> Order:
+        order = self.get(order_id)
+        order.edit(**fields)
+        self.db.commit()
+        return order
+
+    def export_csv(self) -> str:
+        out = io.StringIO()
+        w = csv.writer(out)
+        w.writerow(["code", "created_at", "customer", "phone", "title", "amount", "status", "due_date",
+                    *[f"{d}_state" for d in Department]])
+        for o in reversed(self.search()):
+            w.writerow([o.code, o.created_at.date().isoformat(), o.customer.name, o.customer.phone, o.title,
+                        f"{o.amount:.2f}", o.status.label, o.due_date or "", *[o.task(d).state for d in Department]])
+        return out.getvalue()
+
     def update_task(self, order_id: int, department: Department, state: TaskState, staff: Staff,
                     note: str = "") -> tuple[Order, int]:
         order = self.get(order_id)
@@ -142,9 +245,9 @@ class CampaignService(Repository):
         campaign = Campaign(name=name, channel=channel, message=message, audience=audience, skipped=skipped)
         self.db.add(campaign)
         self.db.flush()
-        sent = self.notifications.campaign(campaign, ok)
-        campaign.sent = len(sent)
-        self.db.add_all(sent)
+        queued = self.notifications.campaign(campaign, ok)
+        campaign.sent = len(queued)
+        self.db.add_all(queued)
         self.db.commit()
         return campaign
 
@@ -154,6 +257,25 @@ class NotificationService(Repository):
 
     def recent(self, limit: int = 50) -> list[Notification]:
         return list(self.db.scalars(select(Notification).order_by(Notification.id.desc()).limit(limit)))
+
+    def counts(self) -> dict[str, int]:
+        rows = self.db.execute(select(Notification.state, func.count()).group_by(Notification.state)).all()
+        return {state: n for state, n in rows}
+
+    def retry_failed(self) -> int:
+        rows = self.db.scalars(select(Notification).where(Notification.state == "failed")).all()
+        for r in rows:
+            r.state, r.attempts = "queued", 0
+        self.db.commit()
+        return len(rows)
+
+
+@dataclass
+class WeekPoint:
+    week_start: date
+    orders: int = 0
+    revenue: float = 0
+    completed: int = 0
 
 
 @dataclass
@@ -165,6 +287,7 @@ class DashboardStats:
     customers: int
     by_status: dict[OrderStatus, int]
     departments: dict[Department, dict[TaskState, int]]
+    weekly: list[WeekPoint] = field(default_factory=list)
 
 
 class ReportService:
@@ -185,5 +308,26 @@ class ReportService:
             overdue=sum(o.is_overdue(today) for o in orders),
             revenue=sum(o.amount for o in orders),
             customers=self.db.scalar(select(func.count(Customer.id))) or 0,
-            by_status=by_status, departments=depts,
+            by_status=by_status, departments=depts, weekly=self.weekly(orders, today),
         )
+
+    @staticmethod
+    def weekly(orders: list[Order], today: date | None = None, weeks: int = 8) -> list[WeekPoint]:
+        today = today or date.today()
+        this_monday = today - timedelta(days=today.weekday())
+        points = [WeekPoint(this_monday - timedelta(weeks=weeks - 1 - i)) for i in range(weeks)]
+        index = {p.week_start: p for p in points}
+
+        def bucket(dt: datetime | None) -> WeekPoint | None:
+            if not dt:
+                return None
+            d = dt.astimezone(timezone.utc).date() if dt.tzinfo else dt.date()
+            return index.get(d - timedelta(days=d.weekday()))
+
+        for o in orders:
+            if p := bucket(o.created_at):
+                p.orders += 1
+                p.revenue += o.amount
+            if p := bucket(o.completed_at):
+                p.completed += 1
+        return points

@@ -1,14 +1,18 @@
 """Domain entities. Each class owns its rules; services only orchestrate and persist."""
 from __future__ import annotations
 
+import hashlib
+import hmac
+import re
+import secrets
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Column, DateTime, Enum, Float, ForeignKey, String, Table, Text
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db import Base
-from .enums import Channel, Department, OrderStatus, Role, Segment, TaskState
+from .enums import Channel, Department, OrderStatus, Permission, Role, Segment, TaskState
 from .errors import InvalidOperation
 
 
@@ -67,6 +71,8 @@ class Customer(Base):
     phone: Mapped[str] = mapped_column(String(32), default="")
     email: Mapped[str] = mapped_column(String(120), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
+    consent_token: Mapped[str] = mapped_column(String(32), unique=True, index=True,
+                                               default=lambda: secrets.token_urlsafe(16))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     tags: Mapped[list[Tag]] = relationship(secondary=customer_tags, lazy="selectin")
@@ -94,8 +100,18 @@ class Customer(Base):
         self.consents.append(ConsentRecord(channel=channel, granted=granted, source=source))
         return True
 
+    @property
+    def phone_e164(self) -> str:
+        """Malaysian numbers: 012-345 6789 -> +60123456789. Already-international numbers are kept."""
+        digits = re.sub(r"\D", "", self.phone or "")
+        if not digits:
+            return ""
+        if (self.phone or "").strip().startswith("+") or digits.startswith("60"):
+            return "+" + digits
+        return "+6" + digits if digits.startswith("0") else "+60" + digits
+
     def contact_for(self, channel: Channel) -> str:
-        return self.email if channel is Channel.EMAIL else self.phone
+        return self.email if channel is Channel.EMAIL else self.phone_e164
 
     def can_receive(self, channel: Channel) -> bool:
         return self.has_consent(channel) and bool(self.contact_for(channel))
@@ -127,7 +143,27 @@ class Staff(Base):
     __tablename__ = "staff"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(80))
+    username: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(200), default="")
     role: Mapped[Role] = enum_col(Role)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    _ITERATIONS = 200_000
+
+    def set_password(self, password: str) -> None:
+        if len(password) < 8:
+            raise InvalidOperation("Password mesti sekurang-kurangnya 8 aksara")
+        salt = secrets.token_hex(16)
+        digest = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), self._ITERATIONS).hex()
+        self.password_hash = f"pbkdf2_sha256${self._ITERATIONS}${salt}${digest}"
+
+    def check_password(self, password: str) -> bool:
+        try:
+            _, iters, salt, digest = self.password_hash.split("$")
+        except ValueError:
+            return False
+        test = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), int(iters)).hex()
+        return self.active and hmac.compare_digest(test, digest)
 
     @property
     def department(self) -> Department | None:
@@ -137,8 +173,11 @@ class Staff(Base):
     def is_admin(self) -> bool:
         return self.role is Role.ADMIN
 
+    def can(self, permission: Permission) -> bool:
+        return self.active and permission in self.role.permissions
+
     def can_work_on(self, department: Department) -> bool:
-        return self.is_admin or self.department is department
+        return self.can(Permission.UPDATE_TASKS) and (self.is_admin or self.department is department)
 
 
 # ---------------------------------------------------------------- orders
@@ -226,6 +265,14 @@ class Order(Base):
         order.logs = [StatusLog(status=OrderStatus.RECEIVED)]
         return order
 
+    def edit(self, title: str | None = None, details: str | None = None, amount: float | None = None,
+             due_date: date | None = None) -> None:
+        if amount is not None and amount < 0:
+            raise InvalidOperation("Amount tidak boleh negatif")
+        for field, value in (("title", title), ("details", details), ("amount", amount), ("due_date", due_date)):
+            if value is not None:
+                setattr(self, field, value)
+
     def task(self, department: Department) -> OrderTask:
         return next(t for t in self.tasks if t.department is department)
 
@@ -283,7 +330,7 @@ class Campaign(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     def render_for(self, customer: Customer) -> str:
-        return self.message.replace("{name}", customer.first_name)
+        return self.message.replace("{name}", customer.first_name).strip()
 
 
 class Notification(Base):
@@ -295,9 +342,22 @@ class Notification(Base):
     channel: Mapped[Channel] = enum_col(Channel)
     recipient: Mapped[str] = mapped_column(String(120))
     message: Mapped[str] = mapped_column(Text)
-    state: Mapped[str] = mapped_column(String(16), default="sent")
+    state: Mapped[str] = mapped_column(String(16), default="queued")  # queued|sent|simulated|failed
+    detail: Mapped[str] = mapped_column(Text, default="")
+    attempts: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     customer: Mapped[Customer] = relationship(lazy="joined")
+
+    MAX_ATTEMPTS = 3
+
+    def mark(self, state: str, detail: str = "") -> None:
+        self.attempts += 1
+        self.state, self.detail = state, detail
+        if state in ("sent", "simulated"):
+            self.sent_at = utcnow()
+        elif state == "failed" and self.attempts < self.MAX_ATTEMPTS:
+            self.state = "queued"  # retried on the next dispatch
 
     __mapper_args__ = {"polymorphic_on": "kind", "polymorphic_identity": "generic"}
 

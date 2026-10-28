@@ -7,10 +7,10 @@ from app.domain.errors import InvalidOperation
 from app.domain.models import Customer, Order, SegmentPolicy, Staff
 from app.services.notifiers import NotificationCenter
 
-designer = Staff(id=1, name="Aina", role=Role.DESIGN)
-producer = Staff(id=2, name="Hafiz", role=Role.PRODUCTION)
-driver = Staff(id=3, name="Zul", role=Role.DELIVERY)
-boss = Staff(id=4, name="Boss", role=Role.ADMIN)
+designer = Staff(id=1, name="Aina", role=Role.DESIGN, active=True)
+producer = Staff(id=2, name="Hafiz", role=Role.PRODUCTION, active=True)
+driver = Staff(id=3, name="Zul", role=Role.DELIVERY, active=True)
+boss = Staff(id=4, name="Boss", role=Role.ADMIN, active=True)
 
 
 def make_order(**kw) -> Order:
@@ -81,5 +81,48 @@ def test_segment_policy():
 def test_status_notification_only_on_consented_channels():
     o = make_order()
     o.customer.set_consent(Channel.SMS, True)
-    sent = NotificationCenter().order_status(o)
+    sent = NotificationCenter("https://x.my").order_status(o)
     assert [n.channel for n in sent] == [Channel.SMS] and "ORD-1" in sent[0].message
+    assert sent[0].recipient == "+6012" and sent[0].state == "queued" and "https://x.my/?id=ORD-1" in sent[0].message
+
+
+def test_malaysian_phone_normalisation():
+    assert Customer(phone="012-345 6789").phone_e164 == "+60123456789"
+    assert Customer(phone="+65 9123 4567").phone_e164 == "+6591234567"
+    assert Customer(phone="60123456789").phone_e164 == "+60123456789"
+    assert Customer(phone="").phone_e164 == ""
+
+
+def test_password_hashing():
+    s = Staff(name="A", username="a", role=Role.SALES, active=True)
+    s.set_password("rahsia123")
+    assert s.check_password("rahsia123") and not s.check_password("salah")
+    with pytest.raises(InvalidOperation):
+        s.set_password("short")
+
+
+def test_role_permissions():
+    from app.domain.enums import Permission
+    sales = Staff(name="M", username="m", role=Role.SALES, active=True)
+    assert sales.can(Permission.MANAGE_ORDERS) and not sales.can(Permission.SEND_CAMPAIGNS)
+    assert not sales.can_work_on(Department.DESIGN)
+
+
+def test_dispatcher_marks_rows_and_retries():
+    from app.domain.models import Notification
+    from app.services.notifiers import DeliveryResult, Dispatcher, Notifier, SimulatedNotifier
+
+    class Flaky(Notifier):
+        channel = Channel.SMS
+        def deliver(self, recipient, message, subject):
+            raise RuntimeError("gateway down")
+
+    n = Notification(channel=Channel.SMS, recipient="+6012", message="x", state="queued", attempts=0)
+    result = Flaky().send(n.recipient, n.message)
+    n.mark(result.state, result.detail)
+    assert n.state == "queued" and n.attempts == 1 and "gateway down" in n.detail  # will retry
+    n.mark("failed"); n.mark("failed")
+    assert n.state == "failed" and n.attempts == 3
+    assert SimulatedNotifier(Channel.EMAIL).send("a@b.c", "x").state == "simulated"
+    assert SimulatedNotifier(Channel.EMAIL).send("", "x").state == "failed"
+    assert set(Dispatcher([SimulatedNotifier(c) for c in Channel]).status().values()) == {False}
