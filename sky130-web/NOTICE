@@ -1,0 +1,5 @@
+SKY130 Analog Lab bundles or depends on the following third-party work:
+
+- eecircuit-engine (MIT) by Danial Chitnis: ngspice compiled to WebAssembly.
+- ngspice (BSD-3-Clause and related licenses): circuit simulator.
+- SkyWater SKY130 PDK models (Apache-2.0): transistor model cards, shipped inside eecircuit-engine.

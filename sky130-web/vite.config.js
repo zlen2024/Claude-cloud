@@ -4,4 +4,5 @@ import { defineConfig } from "vite";
 export default defineConfig({
   base: "./",
   build: { chunkSizeWarningLimit: 30000 },
+  test: { include: ["tests/**/*.test.js"] },
 });

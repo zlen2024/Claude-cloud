@@ -2,6 +2,10 @@
 
 Simulator analog yang jalan **terus dalam browser** (ngspice dalam WebAssembly) dengan model transistor **SkyWater SKY130**. Tak perlu Linux, Xschem atau install PDK. Sesuai untuk orang yang baru nak berjinak dengan analog IC design.
 
+## Test
+
+`npm test` (Vitest, semua lesson melalui engine), `npm run test:e2e` (Playwright). Set `PW_CHROMIUM` kalau nak guna binary Chromium sedia ada.
+
 ## Cara run (Windows)
 
 1. Install **Node.js LTS** dari https://nodejs.org

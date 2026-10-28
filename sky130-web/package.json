@@ -6,7 +6,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "smoke": "node scripts/smoke-test.mjs"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "smoke": "npm test"
   },
   "keywords": [],
   "author": "",
@@ -15,7 +17,9 @@
     "eecircuit-engine": "^1.9.0"
   },
   "devDependencies": {
-    "vite": "^8.3.5"
+    "@playwright/test": "^1.64.1",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   },
   "private": true,
   "type": "module"

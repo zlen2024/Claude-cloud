@@ -240,7 +240,7 @@ Layout editing (Magic-style), DRC/LVS, parasitic extraction, Monte Carlo and cor
 ## Progress checklist
 
 - [x] Phase 0: MVP (v0.1.0)
-- [ ] Phase 1: Foundations
+- [x] Phase 1: Foundations (git sudah wujud di root repo; CI + Pages workflow di .github/workflows)
 - [ ] Phase 2: Web Worker engine
 - [ ] Phase 3: Results and plotting
 - [ ] Phase 4: Editor and sharing
