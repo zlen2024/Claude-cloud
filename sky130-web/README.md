@@ -55,6 +55,13 @@ Tanpa `scale`, ngspice tak jumpa bin model yang sesuai ("could not find a valid 
 - Eksport CSV dan PNG.
 - Perhatian bin W/L: lihat `docs/engine-notes.md` (contoh `w=2 l=0.5` tak sah).
 
+## Editor (Phase 4)
+
+CodeMirror 6 dengan highlight SPICE, nombor baris dan `Ctrl+Enter`. Ralat ngspice digaris bawah pada baris yang betul
+(ralat dalam model PDK dilaporkan berasingan). Hint sebelum run: header SKY130 tak lengkap (satu klik "Tambah header"),
+`m1` dengan model SKY130, W/L nampak seperti meter, tiada baris analisis. Suntingan disimpan automatik per lesson
+(localStorage). Butang **Kongsi** letak netlist dalam URL hash (`#s=...`); membukanya memuat netlist ke **Scratch**.
+
 ## Had MVP (jujur)
 
 - Tiada schematic editor. Input ialah netlist teks.

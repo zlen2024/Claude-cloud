@@ -1,5 +1,10 @@
 import { Engine, EngineAbortError } from "./engine/client.js";
-import { LESSONS } from "./lessons.js";
+import { LESSONS, SCRATCH } from "./lessons.js";
+import { createEditor } from "./editor.js";
+import { lintNetlist, addSkyHeader } from "./lint.js";
+import { parseNgspiceErrors, PDK_MESSAGE } from "./errors.js";
+import { encodeShare, decodeShare } from "./share.js";
+import { store } from "./storage.js";
 import { Plot, colorFor, fmt } from "./plot.js";
 import { buildSignals, inferUnit, toCsv } from "./signals.js";
 import { evaluate, ExprError } from "./expr.js";
@@ -8,7 +13,7 @@ import "./style.css";
 
 const $ = (id) => document.getElementById(id);
 const els = {
-  lesson: $("lesson"), desc: $("desc"), editor: $("editor"), run: $("run"), reset: $("reset"), stop: $("stop"),
+  lesson: $("lesson"), desc: $("desc"), editorHost: $("editor"), hints: $("hints"), share: $("share"), run: $("run"), reset: $("reset"), stop: $("stop"),
   status: $("status"), legend: $("legend"), log: $("log"), plot: $("plot"), info: $("info"),
   expr: $("expr"), exprAdd: $("expr-add"), curA: $("cur-a"), curB: $("cur-b"), csv: $("csv"), png: $("png"),
 };
@@ -30,9 +35,62 @@ function logLines(lines, kind = "") {
   els.log.textContent = lines.join("\n");
 }
 
-function loadLesson(index) {
-  const lesson = LESSONS[index];
-  els.editor.value = lesson.netlist;
+const ALL = [...LESSONS, SCRATCH];
+let current = ALL[0];
+let lintDiags = [];
+let runDiags = [];
+let saveTimer = null;
+
+const editor = createEditor(els.editorHost, {
+  onRun: () => run(),
+  onChange: () => {
+    runDiags = [];
+    store.set(`netlist:${current.id}`, editor.getValue());
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(refreshLint, 300);
+  },
+});
+
+function refreshLint() {
+  lintDiags = lintNetlist(editor.getValue());
+  applyDiagnostics();
+  renderHints();
+}
+
+function applyDiagnostics() {
+  editor.setDiagnostics([...lintDiags.filter((d) => d.line > 0), ...runDiags]);
+}
+
+function renderHints() {
+  els.hints.innerHTML = "";
+  for (const d of lintDiags.filter((x) => x.line === 0)) {
+    const div = document.createElement("div");
+    div.className = "hint";
+    div.textContent = d.message;
+    if (d.fixId === "header") {
+      const b = document.createElement("button");
+      b.id = "fix-header";
+      b.textContent = "Tambah header SKY130";
+      b.addEventListener("click", () => {
+        editor.setValue(addSkyHeader(editor.getValue()));
+        store.set(`netlist:${current.id}`, editor.getValue());
+        refreshLint();
+      });
+      div.append(b);
+    }
+    els.hints.append(div);
+  }
+}
+
+function loadLesson(index, { text, reset = false } = {}) {
+  const lesson = ALL[index];
+  current = lesson;
+  els.lesson.value = String(index);
+  if (reset) store.remove(`netlist:${lesson.id}`);
+  editor.setValue(text ?? store.get(`netlist:${lesson.id}`) ?? lesson.netlist);
+  if (text !== undefined) store.set(`netlist:${lesson.id}`, text);
+  runDiags = [];
+  refreshLint();
   els.desc.textContent = lesson.description;
   built = null;
   items = [];
@@ -179,12 +237,24 @@ function addDerived(src, { quiet = false } = {}) {
   }
 }
 
+function showRunErrors(errors, fallback = "Ralat tidak diketahui.") {
+  const { diagnostics, pdk, other } = parseNgspiceErrors(errors, netlistRun);
+  runDiags = diagnostics;
+  applyDiagnostics();
+  const lines = diagnostics.map((d) => `Baris ${d.line}: ${d.message}`);
+  if (pdk) lines.push(PDK_MESSAGE);
+  if (!lines.length) lines.push(...(other.length ? other : [fallback]));
+  logLines(lines, "err");
+}
+
 async function run() {
   els.run.disabled = true;
   els.stop.disabled = false;
   try {
     setStatus("Simulating…", "busy");
-    netlistRun = els.editor.value;
+    netlistRun = editor.getValue();
+    runDiags = [];
+    applyDiagnostics();
     const { result: res, errors, ms } = await engine.run(netlistRun);
 
     if (!res || res.numVariables === 0 || res.data.length === 0) {
@@ -192,7 +262,7 @@ async function run() {
       plot.clear();
       els.legend.innerHTML = "";
       setStatus("Error", "err");
-      logLines(errors.length ? errors : ["Simulation gagal tanpa mesej error."], "err");
+      showRunErrors(errors, "Simulation gagal tanpa mesej error.");
       return;
     }
 
@@ -216,7 +286,8 @@ async function run() {
       );
     } else {
       setStatus("Error", "err");
-      logLines(e?.errors?.length ? e.errors : [String(e?.message ?? e)], "err");
+      if (e?.errors?.length) showRunErrors(e.errors);
+      else logLines([String(e?.message ?? e)], "err");
     }
   } finally {
     els.run.disabled = false;
@@ -242,14 +313,24 @@ function exportCsv() {
   download("sky130-lab.csv", new Blob([toCsv(built.xLabel, built.x, series)], { type: "text/csv" }));
 }
 
-LESSONS.forEach((l, i) => {
+ALL.forEach((l, i) => {
   const opt = document.createElement("option");
   opt.value = String(i);
   opt.textContent = l.title;
   els.lesson.append(opt);
 });
 els.lesson.addEventListener("change", () => loadLesson(Number(els.lesson.value)));
-els.reset.addEventListener("click", () => loadLesson(Number(els.lesson.value)));
+els.reset.addEventListener("click", () => loadLesson(ALL.indexOf(current), { reset: true }));
+els.share.addEventListener("click", async () => {
+  const url = location.origin + location.pathname + encodeShare(editor.getValue());
+  history.replaceState(null, "", url);
+  try {
+    await navigator.clipboard.writeText(url);
+    setStatus("Pautan kongsi disalin", "ok");
+  } catch {
+    setStatus("Pautan kongsi ada dalam bar alamat", "ok");
+  }
+});
 els.run.addEventListener("click", run);
 els.stop.addEventListener("click", () => engine.stop());
 els.exprAdd.addEventListener("click", () => {
@@ -268,18 +349,6 @@ els.curA.addEventListener("click", () => plot.toggleCursor("A"));
 els.curB.addEventListener("click", () => plot.toggleCursor("B"));
 els.csv.addEventListener("click", exportCsv);
 els.png.addEventListener("click", async () => built && download("sky130-lab.png", await plot.toPng()));
-els.editor.addEventListener("keydown", (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-    e.preventDefault();
-    run();
-  }
-  if (e.key === "Tab") {
-    e.preventDefault();
-    const { selectionStart: a, selectionEnd: b, value } = els.editor;
-    els.editor.value = value.slice(0, a) + "  " + value.slice(b);
-    els.editor.selectionStart = els.editor.selectionEnd = a + 2;
-  }
-});
-
-loadLesson(0);
+const shared = decodeShare(location.hash);
+loadLesson(shared !== null ? ALL.length - 1 : 0, shared !== null ? { text: shared } : {});
 setStatus("Sedia");

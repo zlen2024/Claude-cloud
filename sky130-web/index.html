@@ -13,11 +13,13 @@
     <main>
       <section class="col">
         <p class="desc" id="desc"></p>
-        <textarea id="editor" spellcheck="false" aria-label="Netlist editor"></textarea>
+        <div id="editor" class="editor"></div>
+        <div id="hints" class="hints"></div>
         <div class="bar">
           <button id="run" class="primary">Run &#9654;</button>
           <button id="stop" disabled>Stop &#9632;</button>
           <button id="reset">Reset lesson</button>
+          <button id="share" title="Salin pautan kongsi">Kongsi</button>
           <span class="grow"></span>
           <span id="status" class="status"></span>
         </div>

@@ -129,3 +129,20 @@ vin in 0 dc 0.8 ac 1
 `,
   },
 ];
+
+export const SCRATCH = {
+  id: "scratch",
+  title: "Scratch (netlist bebas)",
+  description: "Ruang bebas untuk netlist sendiri. Pautan kongsi dibuka di sini.",
+  netlist: `* Scratch
+${HEADER}
+
+* tulis litar anda di sini
+xm1 d g 0 0 sky130_fd_pr__nfet_01v8 w=1 l=0.15
+vd d 0 1.8
+vg g 0 0
+
+.dc vg 0 1.8 0.01
+.end
+`,
+};

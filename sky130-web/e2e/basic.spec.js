@@ -22,7 +22,7 @@ vin in 0 pulse(0 1.8 1u 1n 1n 0.5u 1u)
 
 test("Run -> Stop -> Run lagi", async ({ page }) => {
   await page.goto("/");
-  await page.fill("#editor", HEAVY);
+  await page.locator("#editor .cm-content").fill(HEAVY);
   await page.click("#run");
   await expect(page.locator("#stop")).toBeEnabled();
   await page.click("#stop");
@@ -35,7 +35,7 @@ test("Run -> Stop -> Run lagi", async ({ page }) => {
 
 test("UI kekal responsif semasa transient besar", async ({ page }) => {
   await page.goto("/");
-  await page.fill("#editor", HEAVY);
+  await page.locator("#editor .cm-content").fill(HEAVY);
   await page.click("#run");
   // ukur selang antara frame semasa simulation (main thread bebas = frame berterusan)
   const maxGap = await page.evaluate(
