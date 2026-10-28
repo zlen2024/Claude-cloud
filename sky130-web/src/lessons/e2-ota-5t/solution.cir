@@ -1,0 +1,20 @@
+* SKY130 OTA 5 transistor - AC
+.param mc_switch=0
+.option scale=1.0u
+.include modelcard.skywater
+
+* pasangan input NMOS (xm1, xm2), beban cermin arus PMOS (xm3, xm4)
+xm1 d1  inn tail 0   sky130_fd_pr__nfet_01v8 w=3 l=0.5
+xm2 out inp tail 0   sky130_fd_pr__nfet_01v8 w=3 l=0.5
+xm3 d1  d1  vdd  vdd sky130_fd_pr__pfet_01v8 w=3 l=0.5
+xm4 out d1  vdd  vdd sky130_fd_pr__pfet_01v8 w=3 l=0.5
+* sumber arus ekor ideal (bukan peranti SKY130)
+iss tail 0 20u
+cl  out 0 1p
+
+vdd vdd 0 1.8
+vinp inp 0 dc 0.9 ac 1
+vinn inn 0 dc 0.9
+
+.ac dec 20 1 10G
+.end

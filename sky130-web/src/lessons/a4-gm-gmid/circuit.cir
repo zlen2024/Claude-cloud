@@ -1,0 +1,12 @@
+* SKY130 NMOS - gm dan gm/Id
+.param mc_switch=0
+.option scale=1.0u
+.include modelcard.skywater
+
+xm1 d g 0 0 sky130_fd_pr__nfet_01v8 w=1 l=0.5
+
+vd d 0 0.9
+vg g 0 0
+
+.dc vg 0 1.8 0.005
+.end

@@ -20,6 +20,17 @@ export function makeHelpers(result, netlist) {
     /** Gandaan AC (dB) dan fasa (darjah). */
     mag: (name) => byName(name).mag,
     phase: (name) => byName(name).phase,
+    /** dy/dx (beza terpusat, ikut segmen sapuan). */
+    deriv: (y) => {
+      const out = new Float64Array(y.length);
+      for (const [a, b] of built.segments) {
+        for (let i = a; i < b; i++) {
+          const lo = Math.max(a, i - 1), hi = Math.min(b - 1, i + 1);
+          out[i] = hi === lo ? 0 : (y[hi] - y[lo]) / (built.x[hi] - built.x[lo]);
+        }
+      }
+      return out;
+    },
     /** Nilai sapuan luar bagi segmen k (daripada label "vg = 0.6"). */
     segValue: (k) => Number(/=\s*(.+)$/.exec(built.segLabels[k])?.[1]),
   };

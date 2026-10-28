@@ -39,14 +39,18 @@ Cipta folder `src/lessons/<id>/` dengan:
 Lesson dipungut automatik (`import.meta.glob`). `npm test` menjalankan setiap `circuit.cir` dan `solution.cir` melalui engine.
 Komen dalam `checks.js` mesti merekod nilai rujukan daripada simulation dan pengiraan tangan.
 
-## Lesson (lama, sebelum Phase 5)
+## Kurikulum
 
-1. Inverter CMOS: VTC (DC sweep)
-2. Inverter CMOS: transient dan delay
-3. NMOS: Id lawan Vgs
-4. PMOS: Id lawan Vsg
+| Modul | Lesson |
+| --- | --- |
+| A. MOSFET | Id-Vgs dan Vth, keluarga Id-Vds, PMOS lawan NMOS, gm dan gm/Id, modulasi panjang saluran |
+| B. Inverter | VTC dan VM, margin hingar, kelewatan perambatan, ring oscillator |
+| C. Penguat satu peringkat | common-source (perintang), common-source (beban arus), source follower, common-gate |
+| D. Cermin arus dan rujukan | cermin asas, cascode, rujukan swa-bias |
+| E. Pembeza dan op-amp | pasangan pembeza, OTA 5T, dua peringkat Miller, pengikut voltan (sambutan langkah) |
 
-Lesson ada dalam `src/lessons.js`. Nak tambah lesson, tambah satu objek `{ id, title, description, netlist }`.
+Modul F (PTAT/CTAT, bandgap, comparator, capstone) dijadualkan untuk v1.1. Peranti SKY130 yang tersedia: `docs/device-support.md`.
+Perintang, kapasitor, sumber arus dan BJT dalam lesson ialah elemen SPICE ideal, **bukan** peranti SKY130.
 
 ## Tiga baris wajib untuk model SKY130
 

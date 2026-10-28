@@ -1,7 +1,7 @@
 ---
 title: Inverter CMOS: kelewatan perambatan
 module: B
-order: 2
+order: 3
 ---
 # Inverter CMOS: transient dan kelewatan
 

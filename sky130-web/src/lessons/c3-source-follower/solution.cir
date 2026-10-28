@@ -1,0 +1,15 @@
+* SKY130 source follower - AC
+.param mc_switch=0
+.option scale=1.0u
+.include modelcard.skywater
+
+* drain ke VDD, source = output, bulk ke 0
+xm1 vdd in out 0 sky130_fd_pr__nfet_01v8 w=7 l=0.5
+rl  out 0 100k
+cl  out 0 100f
+
+vdd vdd 0 1.8
+vin in  0 dc 1.5 ac 1
+
+.ac dec 20 1 10G
+.end

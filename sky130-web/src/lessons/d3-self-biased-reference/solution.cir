@@ -1,0 +1,21 @@
+* SKY130 rujukan arus swa-bias (beta-multiplier)
+.param mc_switch=0
+.option scale=1.0u
+.include modelcard.skywater
+
+* xm2 lebih lebar daripada xm1 (K = W2/W1), perintang pada source xm2 menetapkan arus
+xm1 g  g  0 0 sky130_fd_pr__nfet_01v8 w=1 l=1
+xm2 p  g  s 0 sky130_fd_pr__nfet_01v8 w=3 l=1
+r1  s  0  20k
+xm3 g3 p  vdd vdd sky130_fd_pr__pfet_01v8 w=3 l=1
+xm4 p  p  vdd vdd sky130_fd_pr__pfet_01v8 w=3 l=1
+
+* sumber 0 V untuk mengukur arus rujukan: Iref = i(vsns)
+vsns g3 g 0
+
+vdd vdd 0 1.8
+* syarat awal: elak keadaan arus sifar
+.nodeset v(g)=0.8 v(p)=1.0
+
+.dc vdd 1.6 2.0 0.05
+.end

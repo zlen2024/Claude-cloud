@@ -1,0 +1,17 @@
+* SKY130 cermin arus cascode
+.param mc_switch=0
+.option scale=1.0u
+.include modelcard.skywater
+
+iref vdd d3 20u
+* xm1 dan xm3 ialah diod bertindan, xm2 dan xm4 cermin dengan cascode
+xm3 d3  d3 d1 0 sky130_fd_pr__nfet_01v8 w=1 l=0.5
+xm1 d1  d1 0  0 sky130_fd_pr__nfet_01v8 w=1 l=0.5
+xm2 s2  d1 0  0 sky130_fd_pr__nfet_01v8 w=1 l=0.5
+xm4 out d3 s2 0 sky130_fd_pr__nfet_01v8 w=1 l=0.5
+
+vdd vdd 0 1.8
+vo  out 0 0.9
+
+.dc vo 0 1.8 0.01
+.end

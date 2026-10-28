@@ -227,11 +227,11 @@ Write lessons in this order. Each needs theory text, a starting circuit, checks 
 - [x] Plots: dual axis, nested sweep, AC Bode, zoom and pan, cursors, CSV and PNG export
 - [x] CodeMirror editor with error underline, linter hints, autosave and share links
 - [x] Guided lesson system with automated checks and hints
-- [ ] Modules A–E written, each solution passing its checks in CI
+- [x] Modules A–E written, each solution passing its checks in CI
 - [ ] Schematic viewer for every lesson
 - [ ] BM and EN UI, PWA offline mode, responsive layout
 - [ ] Unit, engine and e2e tests green in CI; deployed on GitHub Pages
-- [ ] `docs/device-support.md` and `docs/engine-notes.md` written
+- [x] `docs/device-support.md` and `docs/engine-notes.md` written
 
 ## Out of scope for v1.0
 
@@ -245,6 +245,6 @@ Layout editing (Magic-style), DRC/LVS, parasitic extraction, Monte Carlo and cor
 - [x] Phase 3: Results and plotting
 - [x] Phase 4: Editor and sharing
 - [x] Phase 5: Lesson system
-- [ ] Phase 6: Curriculum
+- [x] Phase 6: Curriculum (modul A hingga E; modul F dijadualkan v1.1)
 - [ ] Phase 7: Schematic view
 - [ ] Phase 8: Polish and v1.0

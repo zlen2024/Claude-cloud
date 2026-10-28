@@ -1,0 +1,16 @@
+* SKY130 common-gate amplifier - AC
+.param mc_switch=0
+.option scale=1.0u
+.include modelcard.skywater
+
+* input pada source, gate dibias tetap, output pada drain
+xm1 out g in 0 sky130_fd_pr__nfet_01v8 w=3 l=0.5
+rd  vdd out 10k
+cl  out 0 100f
+
+vdd vdd 0 1.8
+vg  g   0 1.0
+vin in  0 dc 0.1 ac 1
+
+.ac dec 20 1 10G
+.end
